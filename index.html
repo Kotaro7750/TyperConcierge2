@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- CSP の設定 https://developer.mozilla.org/ja/docs/Web/HTTP/CSP -->
+    <!-- img-srcにdata:を指定するのは非推奨みたい -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' ; connect-src ws://localhost:5173; img-src 'self' http://www.w3.org data:; style-src 'self' 'unsafe-inline'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TyperConcierge</title>
+  </head>
+  <body class='bg-light'>
+    <!-- React アプリのマウントポイント -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

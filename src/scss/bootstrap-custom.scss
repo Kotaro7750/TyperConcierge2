@@ -1,0 +1,219 @@
+@use 'sass:math';
+@import '../../node_modules/bootstrap/scss/_functions.scss';
+
+// フォント
+@font-face {
+  font-family: "TyperConciergeFont";
+  src: url("./TyperConciergeFont-Regular.woff") format("woff");
+}
+$font-family-base: "TyperConciergeFont";
+$font-size-base: 1rem;
+
+// カラーパレット
+$blue: #5863f8;
+$red: #dd5040;
+$green: #4a7c59;
+
+$gray-100: #f1f5fa;
+$gray-600: #cedef3;
+$gray-900: #0f2540;
+
+
+@import '../../node_modules/bootstrap/scss/_variables.scss';
+@import  '../../node_modules/bootstrap/scss/_maps.scss';
+@import  '../../node_modules/bootstrap/scss/_utilities.scss';
+@import  '../../node_modules/bootstrap/scss/_mixins.scss';
+
+// Popover
+$popover-header-bg: $secondary;
+$popover-border-color: $secondary;
+
+// Tooltip
+$tooltip-color: $dark;
+$tooltip-bg: $secondary;
+$tooltip-arrow-color: $red;
+
+// 実際にクラスを生成しているのは恐らく最後のutilities/_api.scssなのでそれよりも前にやらないとクラスが生成されない
+$utilities: map-merge(
+  $utilities,
+  (
+    "width": map-merge(
+      map-get($utilities,"width"),
+      (
+        values: map-merge(
+          map-get(map-get($utilities,"width"),"values"),
+          (
+            "10": 10%,
+            "20": 20%,
+            "30": 30%,
+            "40": 40%,
+            "50": 50%,
+            "60": 60%,
+            "70": 70%,
+            "80": 80%,
+            "90": 90%,
+          )
+        )
+      )
+    ),
+    "viewport-height": map-merge(
+      map-get($utilities,"viewport-height"),
+      (
+        values: map-merge(
+          map-get(map-get($utilities,"viewport-height"),"values"),
+          (
+            "10": 10vh,
+            "20": 20vh,
+            "30": 30vh,
+            "40": 40vh,
+            "50": 50vh,
+            "60": 60vh,
+            "70": 70vh,
+            "80": 80vh,
+            "90": 90vh,
+          )
+        )
+      )
+    ),
+    "min-viewport-height": map-merge(
+      map-get($utilities,"min-viewport-height"),
+      (
+        values: map-merge(
+          map-get(map-get($utilities,"min-viewport-height"),"values"),
+          (
+            "10": 10vh,
+            "20": 20vh,
+            "30": 30vh,
+            "40": 40vh,
+            "50": 50vh,
+            "60": 60vh,
+            "70": 70vh,
+            "80": 80vh,
+            "90": 90vh,
+          )
+        )
+      )
+    )
+  )
+);
+
+
+// デフォルトのbootstrap本体のロード
+// Layout & components
+@import "../../node_modules/bootstrap/scss/_root.scss";
+@import "../../node_modules/bootstrap/scss/_reboot.scss";
+@import "../../node_modules/bootstrap/scss/_type.scss";
+@import "../../node_modules/bootstrap/scss/_images.scss";
+@import "../../node_modules/bootstrap/scss/_containers.scss";
+@import "../../node_modules/bootstrap/scss/_grid.scss";
+@import "../../node_modules/bootstrap/scss/_tables.scss";
+@import "../../node_modules/bootstrap/scss/_forms.scss";
+@import "../../node_modules/bootstrap/scss/_buttons.scss";
+@import "../../node_modules/bootstrap/scss/_transitions.scss";
+@import "../../node_modules/bootstrap/scss/_dropdown.scss";
+@import "../../node_modules/bootstrap/scss/_button-group.scss";
+@import "../../node_modules/bootstrap/scss/_nav.scss";
+@import "../../node_modules/bootstrap/scss/_navbar.scss";
+@import "../../node_modules/bootstrap/scss/_card.scss";
+@import "../../node_modules/bootstrap/scss/_accordion.scss";
+@import "../../node_modules/bootstrap/scss/_breadcrumb.scss";
+@import "../../node_modules/bootstrap/scss/_pagination.scss";
+@import "../../node_modules/bootstrap/scss/_badge.scss";
+@import "../../node_modules/bootstrap/scss/_alert.scss";
+@import "../../node_modules/bootstrap/scss/_progress.scss";
+@import "../../node_modules/bootstrap/scss/_list-group.scss";
+@import "../../node_modules/bootstrap/scss/_close.scss";
+@import "../../node_modules/bootstrap/scss/_toasts.scss";
+@import "../../node_modules/bootstrap/scss/_modal.scss";
+@import "../../node_modules/bootstrap/scss/_tooltip.scss";
+@import "../../node_modules/bootstrap/scss/_popover.scss";
+@import "../../node_modules/bootstrap/scss/_carousel.scss";
+@import "../../node_modules/bootstrap/scss/_spinners.scss";
+@import "../../node_modules/bootstrap/scss/_offcanvas.scss";
+@import "../../node_modules/bootstrap/scss/_placeholders.scss";
+
+// Helpers
+@import "../../node_modules/bootstrap/scss/_helpers.scss";
+
+// Utilities
+@import "../../node_modules/bootstrap/scss/utilities/_api.scss";
+
+// 追加のカスタムクラス
+
+.timer-circle {
+  stroke-width: 5px;
+  stroke: $primary;
+  fill: none;
+  transition: all 0.7s;
+  cx: 50%;
+  cy: 50%;
+  // 円周の描画を上から行う(デフォルトは右)
+  // デフォルトでは回転の原点は左上になってしまう
+  transform-origin: 50% 50%;
+  transform: rotate(-90deg);
+}
+
+.timer-time {
+  position: absolute;
+  top: 0%;
+  start: 50%;
+}
+
+// aspect-ratioを設定することでSVGのビューポートを正方形にする 
+.svg-square {
+  height: 100%;
+  aspect-ratio: 1;
+}
+
+// Tooltip
+.tooltip {
+  .tooltip-inner {
+    text-align: left;
+    word-break: break-all;
+    padding: 0.25rem 0.25rem;
+    background-color:$white;
+    border: 2px solid $primary;
+    border-radius: 0.3rem;
+  }
+
+  .tooltip-arrow::before {
+    border-top-color: $primary;
+  }
+}
+
+.tooltip-secondary {
+  .tooltip-inner {
+    background-color:$white;
+    border: 2px solid $secondary;
+    border-radius: 0.3rem;
+  }
+
+  .tooltip-arrow::before {
+    border-top-color: $secondary;
+  }
+}
+
+.tooltip-warning {
+  .tooltip-inner {
+    background-color:$white;
+    border: 2px solid $warning;
+    border-radius: 0.3rem;
+  }
+
+  .tooltip-arrow::before {
+    border-top-color: $warning;
+  }
+}
+
+.tooltip-danger {
+  .tooltip-inner {
+    background-color:$white;
+    border: 2px solid $danger;
+    border-radius: 0.3rem;
+  }
+
+  .tooltip-arrow::before {
+    border-top-color: $danger;
+  }
+}
+
