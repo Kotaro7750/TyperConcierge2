@@ -14,7 +14,8 @@ use typing_engine::{SpellString, VocabularyEntry};
 
 pub struct Library {
     library_dir_path: PathBuf,
-    dictionaries: HashMap<String, Dictionary>,
+    word_dictionaries: HashMap<String, Dictionary>,
+    sentence_dictionaries: HashMap<String, Dictionary>,
 }
 
 impl Library {
@@ -28,34 +29,62 @@ impl Library {
 
         assert!(library_dir_path.exists());
 
+        let dictionaries: HashMap<String, Dictionary> = construct_dictionaries(&library_dir_path)
+            .drain(..)
+            .map(|dictionary| (dictionary.name().to_string(), dictionary))
+            .collect();
+
+        let (word_dictionaries, sentence_dictionaries) = dictionaries
+            .into_iter()
+            .partition(|(_, dictionary)| dictionary.dictionary_type == DictionaryType::Word);
+
         Self {
-            dictionaries: construct_dictionaries(&library_dir_path)
-                .drain(..)
-                .map(|dictionary| (dictionary.name().to_string(), dictionary))
-                .collect(),
+            word_dictionaries,
+            sentence_dictionaries,
             library_dir_path,
         }
     }
 
     // 現在登録されている辞書情報の一覧を取得する
-    pub fn dictionary_infos(&self) -> Vec<DictionaryInfo> {
-        self.dictionaries
-            .iter()
-            .map(|(_, dictionary)| dictionary.construct_dictionary_info())
-            .collect()
+    pub fn dictionary_infos(&self) -> CategorizedDictionaryInfos {
+        CategorizedDictionaryInfos::new(
+            self.word_dictionaries
+                .iter()
+                .map(|(_, dictionary)| dictionary.construct_dictionary_info())
+                .collect(),
+            self.sentence_dictionaries
+                .iter()
+                .map(|(_, dictionary)| dictionary.construct_dictionary_info())
+                .collect(),
+        )
     }
 
     // 自身の管理している辞書群を更新する
     pub fn reload_dictionaries(&mut self) {
         // TODO タイムスタンプで更新のいらないファイルは更新しないようにする
-        self.dictionaries = construct_dictionaries(&self.library_dir_path)
-            .drain(..)
-            .map(|dictionary| (dictionary.name().to_string(), dictionary))
-            .collect();
+        let dictionaries: HashMap<String, Dictionary> =
+            construct_dictionaries(&self.library_dir_path)
+                .drain(..)
+                .map(|dictionary| (dictionary.name().to_string(), dictionary))
+                .collect();
+
+        let (word_dictionaries, sentence_dictionaries) = dictionaries
+            .into_iter()
+            .partition(|(_, dictionary)| dictionary.dictionary_type == DictionaryType::Word);
+
+        self.word_dictionaries = word_dictionaries;
+        self.sentence_dictionaries = sentence_dictionaries;
     }
 
-    fn get_dictionary(&self, dictionary_name: &str) -> Option<&Dictionary> {
-        self.dictionaries.get(dictionary_name)
+    fn get_dictionary(
+        &self,
+        dictionary_name: &str,
+        dictionary_type: DictionaryType,
+    ) -> Option<&Dictionary> {
+        match dictionary_type {
+            DictionaryType::Word => self.word_dictionaries.get(dictionary_name),
+            DictionaryType::Sentence => self.sentence_dictionaries.get(dictionary_name),
+        }
     }
 }
 

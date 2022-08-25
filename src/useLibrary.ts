@@ -11,6 +11,11 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
     valid_vocabulary_count: number,
   };
 
+  type CategorizedDictionaryInfosFromCore = {
+    word: DictionaryInfoFromCore[],
+    sentence: DictionaryInfoFromCore[],
+  }
+
   type LibraryReducerActionType = { type: 'use', dictionaryName: string } | { type: 'disuse', dictionaryName: string } | { type: 'load', availableDictionaryList: CategorizedDictionaryInfoList } | { type: 'type', dictionaryType: DictionaryType } | { type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: number };
 
   type CategorizedDictionaryInfoList = {
@@ -128,29 +133,28 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
   }
 
   const loadAvailableDictionaryList = () => {
-    invoke<DictionaryInfoFromCore[]>('get_dictionary_infos').then((dictionaryInfoFromCores: DictionaryInfoFromCore[]) => {
-      console.log(dictionaryInfoFromCores);
-
+    invoke<CategorizedDictionaryInfosFromCore>('get_dictionary_infos').then((categorizedDictionaryInfos: CategorizedDictionaryInfosFromCore) => {
       let availableDictionaryList: CategorizedDictionaryInfoList = {
         word: [],
         sentence: [],
       };
 
-      dictionaryInfoFromCores.forEach((dictionaryInfoFromCore) => {
-        let dictionaryInfo: DictionaryInfo = {
-          name: dictionaryInfoFromCore.name,
+      categorizedDictionaryInfos.word.forEach(wordDictionary => {
+        availableDictionaryList.word.push({
+          name: wordDictionary.name,
           type: 'word',
-          invalidLineNumberList: dictionaryInfoFromCore.invalid_line_numbers,
-          validVocabularyCount: dictionaryInfoFromCore.valid_vocabulary_count,
-        };
+          validVocabularyCount: wordDictionary.valid_vocabulary_count,
+          invalidLineNumberList: wordDictionary.invalid_line_numbers,
+        });
+      });
 
-        if (dictionaryInfoFromCore.dictionary_type == 'Word') {
-          dictionaryInfo.type = 'word';
-          availableDictionaryList.word.push(dictionaryInfo);
-        } else {
-          dictionaryInfo.type = 'sentence';
-          availableDictionaryList.sentence.push(dictionaryInfo);
-        }
+      categorizedDictionaryInfos.sentence.forEach(sentenceDictionary => {
+        availableDictionaryList.sentence.push({
+          name: sentenceDictionary.name,
+          type: 'sentence',
+          validVocabularyCount: sentenceDictionary.valid_vocabulary_count,
+          invalidLineNumberList: sentenceDictionary.invalid_line_numbers,
+        });
       });
 
       dispatchLibrary({ type: 'load', availableDictionaryList: availableDictionaryList });

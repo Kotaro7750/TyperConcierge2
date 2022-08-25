@@ -11,12 +11,12 @@ use typing_engine::{
     VocabularyQuantifier, VocabularySeparator,
 };
 
-use library::{DictionaryInfo, Library};
+use library::{CategorizedDictionaryInfos, Library};
 
 mod library;
 
 #[tauri::command]
-fn get_dictionary_infos(library: State<Mutex<Library>>) -> Vec<DictionaryInfo> {
+fn get_dictionary_infos(library: State<Mutex<Library>>) -> CategorizedDictionaryInfos {
     let mut locked_library = library.lock().unwrap();
 
     locked_library.reload_dictionaries();
