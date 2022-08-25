@@ -53,8 +53,6 @@ fn confirm_query(
     );
 
     typing_engine.lock().unwrap().init(query_request);
-
-    println!("{:?}", typing_engine.lock().unwrap());
 }
 
 fn main() {

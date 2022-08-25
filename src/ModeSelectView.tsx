@@ -2,19 +2,19 @@ import _, { useState, useEffect, useContext } from 'react';
 
 import { SelectDictionaryPane } from './SelectDictionaryPane';
 
-import { useLibrary } from './useLibrary';
-
 import { GameStateContext } from './App';
+import { LibraryContext } from './App';
 
 const LAP_LENGTH = 50;
 
 export function ModeSelectView() {
+  // XXX コンポーネントが再マウントされると150で初期化されてしまい前使った値が保持されない
   const [keyStrokeCountThreshold, setKeyStrokeCountThreshold] = useState<number>(LAP_LENGTH * 3);
 
   const gameStateContext = useContext(GameStateContext);
 
   // NOTE: 分割代入を使っていこう cf. <https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment>
-  const [{ usedDictionaryType, usedDictionaryNames, availableDictionaries }, libraryOperator] = useLibrary();
+  const { library: { usedDictionaryType, usedDictionaryNames, availableDictionaries }, libraryOperator } = useContext(LibraryContext);
 
   const canStart = () => {
     return usedDictionaryNames.length !== 0;
