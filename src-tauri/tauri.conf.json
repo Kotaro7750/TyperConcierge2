@@ -56,10 +56,12 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 675,
+        "minHeight": 675,
         "resizable": true,
         "title": "TyperConcierge2",
-        "width": 800
+        "width": 900,
+        "minWidth": 900
       }
     ]
   }
