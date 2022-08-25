@@ -76,6 +76,34 @@ impl Library {
         self.sentence_dictionaries = sentence_dictionaries;
     }
 
+    // 指定された辞書から語彙群を構成する
+    // 語彙の順番は引数で渡された辞書名の順番になる
+    pub fn vocabulary_entries_of_request(
+        &self,
+        request_dictionary_type: DictionaryType,
+        request_dictionary_names: &[impl AsRef<str>],
+    ) -> Vec<&VocabularyEntry> {
+        let mut vocabulary_entries: Vec<&VocabularyEntry> = vec![];
+
+        let dictionaries = match request_dictionary_type {
+            DictionaryType::Word => &self.word_dictionaries,
+            DictionaryType::Sentence => &self.sentence_dictionaries,
+        };
+
+        request_dictionary_names.iter().for_each(|dictionary_name| {
+            let dictionary = dictionaries.get(dictionary_name.as_ref()).unwrap();
+
+            dictionary
+                .vocabulary_entries
+                .iter()
+                .for_each(|vocabulary_entry| {
+                    vocabulary_entries.push(&vocabulary_entry);
+                });
+        });
+
+        vocabulary_entries
+    }
+
     fn get_dictionary(
         &self,
         dictionary_name: &str,
@@ -151,7 +179,8 @@ impl DictionaryInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-enum DictionaryType {
+#[serde(rename_all = "snake_case")]
+pub enum DictionaryType {
     Word,
     Sentence,
 }

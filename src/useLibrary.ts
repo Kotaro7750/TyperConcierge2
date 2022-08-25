@@ -5,7 +5,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
 
   // tauri側から取得する辞書情報
   type DictionaryInfoFromCore = {
-    dictionary_type: 'Sentence' | 'Word',
+    dictionary_type: DictionaryType,
     invalid_line_numbers: number[],
     name: string,
     valid_vocabulary_count: number,
@@ -14,6 +14,12 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
   type CategorizedDictionaryInfosFromCore = {
     word: DictionaryInfoFromCore[],
     sentence: DictionaryInfoFromCore[],
+  }
+
+  type QueryRequestToCore = {
+    dictionaryType: DictionaryType,
+    usedDictionaryNames: string[],
+    keyStrokeCountThreshold?: number,
   }
 
   type LibraryReducerActionType = { type: 'use', dictionaryName: string } | { type: 'disuse', dictionaryName: string } | { type: 'load', availableDictionaryList: CategorizedDictionaryInfoList } | { type: 'type', dictionaryType: DictionaryType } | { type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: number };
@@ -161,6 +167,16 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
     });
   };
 
+  const confirmQuery = () => {
+    let request: QueryRequestToCore = { dictionaryType: effectiveVocabularyType, usedDictionaryNames: effectiveUsedDictionaryNames };
+
+    if (effectiveVocabularyType == 'word') {
+      request.keyStrokeCountThreshold = innerLibrary.keyStrokeCountThreshold;
+    }
+
+    invoke('confirm_query', { queryRequestFromUi: request });
+  };
+
   // stateの変更は一部非同期なのでreducerの中で全部を行うことはできない
   const operator = (action: LibraryOperatorActionType) => {
     switch (action.type) {
@@ -178,6 +194,9 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
         break;
       case 'keyStrokeCountThreshold':
         dispatchLibrary({ type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: action.keyStrokeCountThreshold });
+        break;
+      case 'confirmQuery':
+        confirmQuery();
         break;
     }
   }

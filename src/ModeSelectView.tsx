@@ -26,6 +26,7 @@ export function ModeSelectView() {
     }
 
     libraryOperator({ type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: keyStrokeCountThreshold });
+    libraryOperator({ type: 'confirmQuery' });
     gameStateContext.setGameState('TransitionToTyping');
   }
 
