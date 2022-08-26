@@ -8,13 +8,10 @@ import { LibraryContext } from './App';
 const LAP_LENGTH = 50;
 
 export function ModeSelectView() {
-  // XXX コンポーネントが再マウントされると150で初期化されてしまい前使った値が保持されない
-  const [keyStrokeCountThreshold, setKeyStrokeCountThreshold] = useState<number>(LAP_LENGTH * 3);
-
   const gameStateContext = useContext(GameStateContext);
 
   // NOTE: 分割代入を使っていこう cf. <https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment>
-  const { library: { usedDictionaryType, usedDictionaryNames, availableDictionaries }, libraryOperator } = useContext(LibraryContext);
+  const { library: { usedDictionaryType, usedDictionaryNames, availableDictionaries, keyStrokeCountThreshold }, libraryOperator } = useContext(LibraryContext);
 
   const canStart = () => {
     return usedDictionaryNames.length !== 0;
@@ -83,7 +80,7 @@ export function ModeSelectView() {
               <div className='row d-flex justify-content-center mt-2'>
                 <div className='d-flex justify-content-center'>
                   <label className='form-label w-75 d-flex'>
-                    <input type='range' className='form-range w-75' min={LAP_LENGTH} max={600} step={LAP_LENGTH} value={keyStrokeCountThreshold} onChange={e => setKeyStrokeCountThreshold(Number(e.target.value))} />
+                    <input type='range' className='form-range w-75' min={LAP_LENGTH} max={600} step={LAP_LENGTH} value={keyStrokeCountThreshold} onChange={e => libraryOperator({ type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: Number(e.target.value) })} />
                     <span className='fs-6 text-nowrap ms-auto'>{keyStrokeCountThreshold}<i className='bi bi-question-circle' data-bs-toggle='tooltip' data-bs-placement='top' title={KEY_STROKE_THRESHOLD_TOOLTIP_TEXT} /></span>
                   </label>
                 </div>
