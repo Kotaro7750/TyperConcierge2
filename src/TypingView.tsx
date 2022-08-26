@@ -56,6 +56,7 @@ export function TypingView() {
   }
 
   const viewDisplayInfo = displayInfo.view;
+  const keyStrokeDisplayInfo = displayInfo.key_stroke;
 
   const progressPercentage = 12.3;
 
@@ -82,7 +83,7 @@ export function TypingView() {
 
       <div className='row mt-3 mx-0'>
         <div className='col-12'>
-          key_stroke_pane
+          {constructStyledStringElement(keyStrokeDisplayInfo.key_stroke, [keyStrokeDisplayInfo.current_cursor_position], keyStrokeDisplayInfo.missed_positions, keyStrokeDisplayInfo.key_stroke.length)}
         </div>
       </div>
     </>
