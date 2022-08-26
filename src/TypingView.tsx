@@ -1,12 +1,16 @@
-import _, { useEffect, useContext } from 'react';
+import _, { useEffect, useContext, useRef } from 'react';
 import { TimerPane } from './TimerPane';
 
 import { GameStateContext } from './App';
 
 import { useMilliSecondTimer } from './useMilliSecondTimer';
+import { useTypingEngine } from './useTypingEngine';
+import { constructStyledStringElement } from './utility';
 
 export function TypingView() {
   const [elapsedTime, startTimer, stopTimer, cancelTimer] = useMilliSecondTimer();
+  const [displayInfo, startGame, handleInput] = useTypingEngine();
+  const isStarted = useRef(false);
 
   const gameStateContext = useContext(GameStateContext);
 
@@ -23,11 +27,22 @@ export function TypingView() {
       cancelTyping();
       return;
     }
+
+    // ShiftとかAltとかの特殊文字を防ぐために長さでバリデーションをかける
+    // 本当はもっといいやり方があるはず
+    if (key.length == 1 && ' '.charCodeAt(0) <= key.charCodeAt(0) && key.charCodeAt(0) <= '~'.charCodeAt(0)) {
+      handleInput(key, elapsedTime);
+    }
   }
 
   // 初回レンダリング終了時にタイマーをスタートさせる
   useEffect(() => {
-    startTimer();
+    if (isStarted.current === false) {
+      startGame();
+      startTimer();
+
+      isStarted.current = true;
+    }
   }, []);
 
   useEffect(() => {
@@ -35,6 +50,12 @@ export function TypingView() {
 
     return () => { removeEventListener('keydown', handleKeyDown) }
   });
+
+  if (displayInfo === null) {
+    return (<></>);
+  }
+
+  const viewDisplayInfo = displayInfo.view;
 
   const progressPercentage = 12.3;
 
@@ -55,7 +76,7 @@ export function TypingView() {
 
       <div className='row mt-3 mx-0'>
         <div className='col-12'>
-          view_pane
+          {constructStyledStringElement(viewDisplayInfo.view, viewDisplayInfo.current_cursor_positions, viewDisplayInfo.missed_positions, viewDisplayInfo.last_potion)}
         </div>
       </div>
 

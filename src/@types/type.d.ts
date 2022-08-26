@@ -23,3 +23,29 @@ type Library = {
 
 type LibraryOperatorActionType = { type: 'use', dictionaryName: string } | { type: 'disuse', dictionaryName: string } | { type: 'load' } | { type: 'type', dictionaryType: DictionaryType } | { type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: number } | { type: 'confirmQuery' };
 
+
+type ViewDisplayInfo = {
+  readonly view: string,
+  readonly current_cursor_positions: number[],
+  readonly missed_positions: number[],
+  readonly last_potion: number,
+}
+
+type SpellDisplayInfo = {
+  readonly spell: string,
+  readonly current_cursor_positions: number[],
+  readonly missed_positions: number[],
+  readonly last_potion: number,
+}
+
+type KeyStrokeDisplayInfo = {
+  readonly key_stroke: string,
+  readonly current_cursor_position: number,
+  readonly missed_positions: number[],
+}
+
+type DisplayInfo = {
+  readonly view: ViewDisplayInfo,
+  readonly spell: SpellDisplayInfo,
+  readonly key_stroke: KeyStrokeDisplayInfo,
+}

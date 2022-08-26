@@ -8,8 +8,8 @@ use std::{fs::create_dir_all, num::NonZeroUsize, sync::Mutex};
 use serde::{Deserialize, Serialize};
 use tauri::{generate_handler, Manager, State};
 use typing_engine::{
-    DisplayInfo, QueryRequest, TypingEngine, VocabularyEntry, VocabularyOrder,
-    VocabularyQuantifier, VocabularySeparator,
+    DisplayInfo, KeyStrokeChar, QueryRequest, TypingEngine, VocabularyOrder, VocabularyQuantifier,
+    VocabularySeparator,
 };
 
 use library::{CategorizedDictionaryInfos, DictionaryType, Library};
@@ -22,6 +22,13 @@ struct QueryRequestFromUI {
     dictionary_type: DictionaryType,
     used_dictionary_names: Vec<String>,
     key_stroke_count_threshold: Option<NonZeroUsize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct KeyStrokeInfo {
+    key: String,
+    elapsed_time: usize,
 }
 
 #[tauri::command]
@@ -49,10 +56,34 @@ fn confirm_query(
         &vocabulary_entries,
         VocabularyQuantifier::KeyStroke(query_request_from_ui.key_stroke_count_threshold.unwrap()),
         VocabularySeparator::WhiteSpace,
-        VocabularyOrder::Random,
+        VocabularyOrder::InOrder,
     );
 
     typing_engine.lock().unwrap().init(query_request);
+}
+
+#[tauri::command]
+fn start_game(typing_engine: State<Mutex<TypingEngine>>) -> DisplayInfo {
+    let mut locked_typing_engine = typing_engine.lock().unwrap();
+    locked_typing_engine.start().unwrap();
+
+    locked_typing_engine.construct_display_info().unwrap()
+}
+
+#[tauri::command]
+fn stroke_key(
+    key_stroke_info: KeyStrokeInfo,
+    typing_engine: State<Mutex<TypingEngine>>,
+) -> DisplayInfo {
+    assert_eq!(key_stroke_info.key.chars().count(), 1);
+    let key_stroke_char = key_stroke_info.key.chars().next().unwrap();
+
+    let mut locked_typing_engine = typing_engine.lock().unwrap();
+    locked_typing_engine
+        .stroke_key(key_stroke_char.try_into().unwrap())
+        .unwrap();
+
+    locked_typing_engine.construct_display_info().unwrap()
 }
 
 fn main() {
@@ -75,7 +106,12 @@ fn main() {
 
             Ok(())
         })
-        .invoke_handler(generate_handler![get_dictionary_infos, confirm_query])
+        .invoke_handler(generate_handler![
+            get_dictionary_infos,
+            confirm_query,
+            start_game,
+            stroke_key
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
