@@ -1,5 +1,7 @@
 import _, { useEffect, useContext, useRef } from 'react';
 import { TimerPane } from './TimerPane';
+import { OldViewPane } from './OldViewPane';
+import { KeyStrokePane } from './KeyStrokePane';
 
 import { GameStateContext } from './App';
 
@@ -77,13 +79,13 @@ export function TypingView() {
 
       <div className='row mt-3 mx-0'>
         <div className='col-12'>
-          {constructStyledStringElement(viewDisplayInfo.view, viewDisplayInfo.current_cursor_positions, viewDisplayInfo.missed_positions, viewDisplayInfo.last_potion)}
+          <OldViewPane viewDisplayInfo={viewDisplayInfo} />
         </div>
       </div>
 
       <div className='row mt-3 mx-0'>
         <div className='col-12'>
-          {constructStyledStringElement(keyStrokeDisplayInfo.key_stroke, [keyStrokeDisplayInfo.current_cursor_position], keyStrokeDisplayInfo.missed_positions, keyStrokeDisplayInfo.key_stroke.length)}
+          <KeyStrokePane keyStrokeDisplayInfo={keyStrokeDisplayInfo} />
         </div>
       </div>
     </>
