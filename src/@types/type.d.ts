@@ -42,6 +42,13 @@ type KeyStrokeDisplayInfo = {
   readonly key_stroke: string,
   readonly current_cursor_position: number,
   readonly missed_positions: number[],
+  readonly on_typing_statistics: {
+    readonly finished_count: number,
+    readonly whole_count: number,
+    readonly ideal_whole_count: number,
+    readonly completely_correct_count: number,
+    readonly wrong_count: number,
+  }
 }
 
 type DisplayInfo = {
