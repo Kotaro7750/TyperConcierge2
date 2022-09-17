@@ -8,8 +8,8 @@ use std::{fs::create_dir_all, num::NonZeroUsize, sync::Mutex};
 use serde::{Deserialize, Serialize};
 use tauri::{generate_handler, Manager, State};
 use typing_engine::{
-    DisplayInfo, KeyStrokeChar, QueryRequest, TypingEngine, VocabularyOrder, VocabularyQuantifier,
-    VocabularySeparator,
+    DisplayInfo, KeyStrokeChar, LapRequest, QueryRequest, TypingEngine, VocabularyOrder,
+    VocabularyQuantifier, VocabularySeparator,
 };
 
 use library::{CategorizedDictionaryInfos, DictionaryType, Library};
@@ -67,7 +67,9 @@ fn start_game(typing_engine: State<Mutex<TypingEngine>>) -> DisplayInfo {
     let mut locked_typing_engine = typing_engine.lock().unwrap();
     locked_typing_engine.start().unwrap();
 
-    locked_typing_engine.construct_display_info().unwrap()
+    locked_typing_engine
+        .construct_display_info(LapRequest::IdealKeyStroke(NonZeroUsize::new(50).unwrap()))
+        .unwrap()
 }
 
 #[tauri::command]
@@ -83,7 +85,9 @@ fn stroke_key(
         .stroke_key(key_stroke_char.try_into().unwrap())
         .unwrap();
 
-    locked_typing_engine.construct_display_info().unwrap()
+    locked_typing_engine
+        .construct_display_info(LapRequest::IdealKeyStroke(NonZeroUsize::new(50).unwrap()))
+        .unwrap()
 }
 
 fn main() {
