@@ -14,7 +14,10 @@ use typing_engine::{
 
 use library::{CategorizedDictionaryInfos, DictionaryType, Library};
 
+mod display_info;
 mod library;
+
+use crate::display_info::DisplayInformation;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,20 +66,21 @@ fn confirm_query(
 }
 
 #[tauri::command]
-fn start_game(typing_engine: State<Mutex<TypingEngine>>) -> DisplayInfo {
+fn start_game(typing_engine: State<Mutex<TypingEngine>>) -> DisplayInformation {
     let mut locked_typing_engine = typing_engine.lock().unwrap();
     locked_typing_engine.start().unwrap();
 
     locked_typing_engine
         .construct_display_info(LapRequest::IdealKeyStroke(NonZeroUsize::new(50).unwrap()))
         .unwrap()
+        .into()
 }
 
 #[tauri::command]
 fn stroke_key(
     key_stroke_info: KeyStrokeInfo,
     typing_engine: State<Mutex<TypingEngine>>,
-) -> DisplayInfo {
+) -> DisplayInformation {
     assert_eq!(key_stroke_info.key.chars().count(), 1);
     let key_stroke_char = key_stroke_info.key.chars().next().unwrap();
 
@@ -88,6 +92,7 @@ fn stroke_key(
     locked_typing_engine
         .construct_display_info(LapRequest::IdealKeyStroke(NonZeroUsize::new(50).unwrap()))
         .unwrap()
+        .into()
 }
 
 fn main() {

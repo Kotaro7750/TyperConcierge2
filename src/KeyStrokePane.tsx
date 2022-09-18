@@ -22,11 +22,8 @@ function LapLine(props: { styledStringElementList: JSX.Element[], lapTimeMS: num
 }
 
 export function KeyStrokePane(props: { keyStrokeDisplayInfo: KeyStrokeDisplayInfo }) {
-  const { key_stroke: keyStroke, current_cursor_position: currentCursorPosition, missed_positions: missedPositions } = props.keyStrokeDisplayInfo;
+  const { keyStroke, currentCursorPosition, missedPositions, lapEndTime: lapElapsedTime, lapEndPositions: lapEndPos } = props.keyStrokeDisplayInfo;
   const styledStringElementList = constructStyledStringElement(keyStroke, [currentCursorPosition], missedPositions, keyStroke.length - 1);
-
-  const lapEndPos: number[] = [];
-  const lapElapsedTime: number[] = [];
 
   let currentLapIndex = 0;
 

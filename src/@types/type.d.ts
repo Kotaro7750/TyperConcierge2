@@ -26,33 +26,21 @@ type LibraryOperatorActionType = { type: 'use', dictionaryName: string } | { typ
 
 type ViewDisplayInfo = {
   readonly view: string,
-  readonly current_cursor_positions: number[],
-  readonly missed_positions: number[],
-  readonly last_potion: number,
-}
-
-type SpellDisplayInfo = {
-  readonly spell: string,
-  readonly current_cursor_positions: number[],
-  readonly missed_positions: number[],
-  readonly last_potion: number,
+  readonly currentCursorPositions: number[],
+  readonly missedPositions: number[],
+  readonly lastPosition: number,
 }
 
 type KeyStrokeDisplayInfo = {
-  readonly key_stroke: string,
-  readonly current_cursor_position: number,
-  readonly missed_positions: number[],
-  readonly on_typing_statistics: {
-    readonly finished_count: number,
-    readonly whole_count: number,
-    readonly ideal_whole_count: number,
-    readonly completely_correct_count: number,
-    readonly wrong_count: number,
-  }
+  readonly keyStroke: string,
+  readonly currentCursorPosition: number,
+  readonly missedPositions: number[],
+  readonly progress: number,
+  readonly lapEndPositions: number[],
+  readonly lapEndTime: number[],
 }
 
 type DisplayInfo = {
   readonly view: ViewDisplayInfo,
-  readonly spell: SpellDisplayInfo,
-  readonly key_stroke: KeyStrokeDisplayInfo,
+  readonly keyStroke: KeyStrokeDisplayInfo,
 }

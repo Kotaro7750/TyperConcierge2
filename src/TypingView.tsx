@@ -58,9 +58,9 @@ export function TypingView() {
   }
 
   const viewDisplayInfo = displayInfo.view;
-  const keyStrokeDisplayInfo = displayInfo.key_stroke;
+  const keyStrokeDisplayInfo = displayInfo.keyStroke;
 
-  const progressPercentage = (keyStrokeDisplayInfo.on_typing_statistics.finished_count / keyStrokeDisplayInfo.on_typing_statistics.whole_count) * 100;
+  const progressPercentage = keyStrokeDisplayInfo.progress * 100;
 
   return (
     <>

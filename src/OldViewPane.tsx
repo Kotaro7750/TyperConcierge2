@@ -4,7 +4,7 @@ import { LineWindow, calcWindowInfo } from './LineWindow';
 import { constructStyledStringElement, isMonoWidthFont } from './utility';
 
 export function OldViewPane(props: { viewDisplayInfo: ViewDisplayInfo }): JSX.Element {
-  const { view, current_cursor_positions: currentCursorPositions, missed_positions: missedPositions, last_potion: lastPosition } = props.viewDisplayInfo;
+  const { view, currentCursorPositions, missedPositions, lastPosition } = props.viewDisplayInfo;
   const currentCursorPositionsMin = Math.min(...currentCursorPositions);
 
   const elemList = constructStyledStringElement(view, currentCursorPositions, missedPositions, lastPosition);
