@@ -44,3 +44,12 @@ type DisplayInfo = {
   readonly view: ViewDisplayInfo,
   readonly keyStroke: KeyStrokeDisplayInfo,
 }
+
+type TypingStatisticsSummary = {
+  // 最短で打った場合のローマ字数
+  idealWordCount: number,
+  // 実際に打ったローマ字系列のローマ字数
+  inputWordCount: number,
+  missCount: number,
+  totalTime: number,
+}

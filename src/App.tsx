@@ -3,6 +3,7 @@ import { useLibrary } from './useLibrary';
 import { ModeSelectView } from './ModeSelectView';
 import { TransitionToTypingView } from './TransitionToTypingView';
 import { TypingView } from './TypingView';
+import { ResultView } from './ResultView';
 
 export const GameStateContext = createContext<GameStateContext>({} as GameStateContext);
 export const LibraryContext = createContext<{ library: Library, libraryOperator: (_: LibraryOperatorActionType) => void }>({} as { library: Library, libraryOperator: (_: LibraryOperatorActionType) => void });
@@ -16,7 +17,10 @@ export function App() {
       <GameStateContext.Provider value={{ gameState: gameState, setGameState: setGameState }}>
         <LibraryContext.Provider value={{ library: library, libraryOperator: libraryOperator }}>
           {
-            gameState === 'ModeSelect' ? <ModeSelectView /> : gameState === 'TransitionToTyping' ? <TransitionToTypingView /> : gameState == 'Typing' ? <TypingView /> : "hgoe"
+            gameState === 'ModeSelect' ? <ModeSelectView />
+              : gameState === 'TransitionToTyping' ? <TransitionToTypingView />
+                : gameState == 'Typing' ? <TypingView />
+                  : <ResultView />
           }
         </LibraryContext.Provider>
       </GameStateContext.Provider>
