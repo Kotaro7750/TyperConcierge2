@@ -7,11 +7,10 @@ import { GameStateContext } from './App';
 
 import { useMilliSecondTimer } from './useMilliSecondTimer';
 import { useTypingEngine } from './useTypingEngine';
-import { constructStyledStringElement } from './utility';
 
 export function TypingView() {
   const [elapsedTime, startTimer, stopTimer, cancelTimer] = useMilliSecondTimer();
-  const [displayInfo, startGame, handleInput] = useTypingEngine();
+  const [displayInfo, startGame, handleInput] = useTypingEngine(() => { stopTimer(); gameStateContext.setGameState('Finished'); });
   const isStarted = useRef(false);
 
   const gameStateContext = useContext(GameStateContext);

@@ -8,7 +8,7 @@ use std::{fs::create_dir_all, num::NonZeroUsize, sync::Mutex};
 use serde::{Deserialize, Serialize};
 use tauri::{generate_handler, Manager, State};
 use typing_engine::{
-    DisplayInfo, KeyStrokeChar, LapRequest, QueryRequest, TypingEngine, VocabularyOrder,
+    LapRequest, QueryRequest, TypingEngine, TypingEngineError, VocabularyOrder,
     VocabularyQuantifier, VocabularySeparator,
 };
 
@@ -18,6 +18,16 @@ mod display_info;
 mod library;
 
 use crate::display_info::DisplayInformation;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ToUIError {}
+
+impl From<TypingEngineError> for ToUIError {
+    fn from(_: TypingEngineError) -> Self {
+        Self {}
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -80,19 +90,20 @@ fn start_game(typing_engine: State<Mutex<TypingEngine>>) -> DisplayInformation {
 fn stroke_key(
     key_stroke_info: KeyStrokeInfo,
     typing_engine: State<Mutex<TypingEngine>>,
-) -> DisplayInformation {
+) -> Result<(bool, DisplayInformation), ToUIError> {
     assert_eq!(key_stroke_info.key.chars().count(), 1);
     let key_stroke_char = key_stroke_info.key.chars().next().unwrap();
 
     let mut locked_typing_engine = typing_engine.lock().unwrap();
-    locked_typing_engine
-        .stroke_key(key_stroke_char.try_into().unwrap())
-        .unwrap();
+    let finished = locked_typing_engine.stroke_key(key_stroke_char.try_into().unwrap())?;
 
-    locked_typing_engine
-        .construct_display_info(LapRequest::IdealKeyStroke(NonZeroUsize::new(50).unwrap()))
-        .unwrap()
-        .into()
+    Ok((
+        finished,
+        locked_typing_engine
+            .construct_display_info(LapRequest::IdealKeyStroke(NonZeroUsize::new(50).unwrap()))
+            .unwrap()
+            .into(),
+    ))
 }
 
 fn main() {

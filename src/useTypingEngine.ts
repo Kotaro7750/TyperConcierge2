@@ -1,7 +1,7 @@
 import _, { useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 
-export function useTypingEngine(): [DisplayInfo | null, () => void, (arg0: string, arg1: number) => void] {
+export function useTypingEngine(onFinished: () => void): [DisplayInfo | null, () => void, (arg0: string, arg1: number) => void] {
   const [displayInfo, setDisplayInfo] = useState<DisplayInfo | null>(null);
 
 
@@ -10,7 +10,14 @@ export function useTypingEngine(): [DisplayInfo | null, () => void, (arg0: strin
   }
 
   const onInput = (c: string, elapsedTime: number) => {
-    invoke<DisplayInfo>('stroke_key', { keyStrokeInfo: { key: c, elapsedTime: elapsedTime } }).then(returned => setDisplayInfo(returned));
+    invoke<[boolean, DisplayInfo]>('stroke_key', { keyStrokeInfo: { key: c, elapsedTime: elapsedTime } })
+      .then(returned => {
+        setDisplayInfo(returned[1]);
+        if (returned[0]) {
+          onFinished();
+        }
+      })
+      .catch(e => console.log(e));
   }
 
   return [displayInfo, startGame, onInput]
