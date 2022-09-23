@@ -45,11 +45,14 @@ type DisplayInfo = {
   readonly keyStroke: KeyStrokeDisplayInfo,
 }
 
-type TypingStatisticsSummary = {
-  // 最短で打った場合のローマ字数
-  idealWordCount: number,
-  // 実際に打ったローマ字系列のローマ字数
-  inputWordCount: number,
-  missCount: number,
-  totalTime: number,
+type TypingResultStatistics = {
+  keyStroke: TypingResultStatisticsTarget,
+  idealKeyStroke: TypingResultStatisticsTarget,
+  totalTimeMs: number,
+}
+
+type TypingResultStatisticsTarget = {
+  wholeCount: number,
+  completelyCorrectCount: number,
+  missedCount: number,
 }

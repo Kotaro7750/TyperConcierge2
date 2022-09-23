@@ -9,15 +9,17 @@ function SubContent(props: { title: string, content: string }): JSX.Element {
   );
 }
 
-export function ResultSummaryPane(props: { summary: TypingStatisticsSummary }): JSX.Element {
+export function ResultSummaryPane(props: { summary: TypingResultStatistics }): JSX.Element {
   const [isWordCountIdeal, setIsWordCountIdeal] = useState<boolean>(false);
 
   const summary = props.summary;
-  const wordCount = isWordCountIdeal ? summary.idealWordCount : summary.inputWordCount;
-  const accuracy = Math.max(0, wordCount - summary.missCount) * 1.0 / wordCount * 100;
+  const effectiveKeyStroke = isWordCountIdeal ? summary.idealKeyStroke : summary.keyStroke;
+
+  const wordCount = effectiveKeyStroke.wholeCount;
+  const accuracy = wordCount == 0 ? 0 : effectiveKeyStroke.completelyCorrectCount * 1.0 / wordCount * 100;
 
   // WPMは切り捨て
-  const wpm = Math.floor(wordCount * 60000 / summary.totalTime);
+  const wpm = summary.totalTimeMs == 0 ? 0 : Math.floor(wordCount * 60000 / summary.totalTimeMs);
 
   // WPM x ( 正確率 )^3 の小数点以下切り捨て
   // 実際のeタイピングはwordCountとしてidealじゃなくて実際の打ったローマ字数を使っている
@@ -50,7 +52,7 @@ export function ResultSummaryPane(props: { summary: TypingStatisticsSummary }): 
 
           <div className='d-flex flex-column w-100 h-100 justify-content-center align-items-center lh-1'>
             <div className='text-secondary'><i className='bi bi-stopwatch' /></div>
-            <div className='fs-2'>{(summary.totalTime / 1000).toFixed(3)}秒</div>
+            <div className='fs-2'>{(summary.totalTimeMs / 1000).toFixed(3)}秒</div>
           </div>
         </div>
       </div>
@@ -58,7 +60,7 @@ export function ResultSummaryPane(props: { summary: TypingStatisticsSummary }): 
       <div className='mt-auto d-flex justify-content-between mb-2'>
         <SubContent title={'WPM'} content={wpm.toString()} />
         <SubContent title={'正確性'} content={`${accuracy.toFixed(0)}%`} />
-        <SubContent title={'ミスタイプ'} content={`${summary.missCount}回`} />
+        <SubContent title={'ミスタイプ'} content={`${effectiveKeyStroke.missedCount}回`} />
         <SubContent title={'字数'} content={`${wordCount}字`} />
       </div>
     </div>

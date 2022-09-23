@@ -16,8 +16,10 @@ use library::{CategorizedDictionaryInfos, DictionaryType, Library};
 
 mod display_info;
 mod library;
+mod result;
 
 use crate::display_info::DisplayInformation;
+use crate::result::TypingResult;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -106,6 +108,16 @@ fn stroke_key(
     ))
 }
 
+#[tauri::command]
+fn get_result(typing_engine: State<Mutex<TypingEngine>>) -> Result<TypingResult, ToUIError> {
+    let locked_typing_engine = typing_engine.lock().unwrap();
+
+    Ok(locked_typing_engine
+        .construst_result_statistics(LapRequest::IdealKeyStroke(NonZeroUsize::new(50).unwrap()))
+        .unwrap()
+        .into())
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
@@ -130,7 +142,8 @@ fn main() {
             get_dictionary_infos,
             confirm_query,
             start_game,
-            stroke_key
+            stroke_key,
+            get_result
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
