@@ -10,7 +10,7 @@ use tauri::{
     api::dir::{is_dir, read_dir},
     PathResolver,
 };
-use typing_engine::{SpellString, VocabularyEntry};
+use typing_engine::{SpellString, VocabularyEntry, VocabularySpell};
 
 pub struct Library {
     library_dir_path: PathBuf,
@@ -255,8 +255,15 @@ fn parse_dictionary_content(file_content: &str) -> (Vec<VocabularyEntry>, Vec<us
             let spells = split_by_exclude_repeated(spells_str, ',');
 
             if let Some(spell_strings) = construct_spell_strings(&spells) {
+                // 語彙が複数文字で綴りの個数が1つしかないときには熟字訓とみなす
+                let spell = if view.chars().count() > 1 && spell_strings.len() == 1 {
+                    VocabularySpell::Compound(spell_strings[0].clone())
+                } else {
+                    VocabularySpell::Normal(spell_strings)
+                };
+
                 //
-                if let Some(vocabulary_entry) = VocabularyEntry::new(view.clone(), spell_strings) {
+                if let Some(vocabulary_entry) = VocabularyEntry::new(view.clone(), spell) {
                     vocabulary_entries.push(vocabulary_entry);
                 } else {
                     invalid_line_numbers.push(line_number);
@@ -327,7 +334,7 @@ fn split_by_exclude_repeated(line: &str, separator: char) -> Vec<String> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use typing_engine::VocabularyEntry;
+    use typing_engine::{VocabularyEntry, VocabularySpell};
 
     #[test]
     fn split_by_exclude_repeated_1() {
@@ -350,19 +357,27 @@ mod test {
 
     #[test]
     fn parse_dictionary_1() {
-        let (ve, iln) = parse_dictionary_content("頑張る:がん,ば,る\n頑張る:がんば,る");
+        let (ve, iln) =
+            parse_dictionary_content("頑張る:がん,ば,る\n頑張る:がんば,る\n百舌鳥:もず");
 
         assert_eq!(
             ve,
-            vec![VocabularyEntry::new(
+            vec![
+            VocabularyEntry::new(
                 "頑張る".to_string(),
-                vec![
+                VocabularySpell::Normal(vec![
                     "がん".to_string().try_into().unwrap(),
                     "ば".to_string().try_into().unwrap(),
                     "る".to_string().try_into().unwrap(),
-                ]
+                ])
             )
-            .unwrap()]
+            .unwrap(),
+            VocabularyEntry::new(
+                "百舌鳥".to_string(),
+                VocabularySpell::Compound("もず".to_string().try_into().unwrap())
+            )
+            .unwrap()
+            ]
         );
 
         assert_eq!(iln, vec![2]);
