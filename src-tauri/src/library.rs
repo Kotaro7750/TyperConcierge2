@@ -366,7 +366,7 @@ mod test {
     #[test]
     fn parse_dictionary_1() {
         let (ve, iln) =
-            parse_dictionary_content("頑張る:がん,ば,る\n頑張る:がんば,る\n百舌鳥:もず");
+            parse_dictionary_content("頑張る:がん,ば,る\n頑張る:がんば,る\n[百舌鳥]:もず");
 
         assert_eq!(
             ve,
@@ -389,6 +389,82 @@ mod test {
                 )
                 .unwrap()
             ]
+        );
+
+        assert_eq!(iln, vec![2]);
+    }
+
+    #[test]
+    fn parse_dictionary_2() {
+        let (ve, iln) =
+            parse_dictionary_content("[昨日]の敵は[今日]の友:きのう,の,てき,は,きょう,の,とも");
+
+        assert_eq!(
+            ve,
+            vec![VocabularyEntry::new(
+                "昨日の敵は今日の友".to_string(),
+                vec![
+                    VocabularySpellElement::Compound((
+                        "きのう".to_string().try_into().unwrap(),
+                        NonZeroUsize::new(2).unwrap()
+                    )),
+                    VocabularySpellElement::Normal("の".to_string().try_into().unwrap()),
+                    VocabularySpellElement::Normal("てき".to_string().try_into().unwrap()),
+                    VocabularySpellElement::Normal("は".to_string().try_into().unwrap()),
+                    VocabularySpellElement::Compound((
+                        "きょう".to_string().try_into().unwrap(),
+                        NonZeroUsize::new(2).unwrap()
+                    )),
+                    VocabularySpellElement::Normal("の".to_string().try_into().unwrap()),
+                    VocabularySpellElement::Normal("とも".to_string().try_into().unwrap()),
+                ]
+            )
+            .unwrap(),]
+        );
+
+        assert_eq!(iln, vec![] as Vec<usize>);
+    }
+
+    #[test]
+    fn parse_dictionary_3() {
+        let (ve, iln) = parse_dictionary_content(r"\\\::\\,\:");
+
+        assert_eq!(
+            ve,
+            vec![VocabularyEntry::new(
+                "\\:".to_string(),
+                vec![
+                    VocabularySpellElement::Normal(r"\".to_string().try_into().unwrap()),
+                    VocabularySpellElement::Normal(":".to_string().try_into().unwrap()),
+                ]
+            )
+            .unwrap(),]
+        );
+
+        assert_eq!(iln, vec![] as Vec<usize>);
+    }
+
+    #[test]
+    fn parse_dictionary_4() {
+        let (ve, iln) = parse_dictionary_content(
+            r"[\[]12:[,1,2
+            [[]12:[,1,2",
+        );
+
+        assert_eq!(
+            ve,
+            vec![VocabularyEntry::new(
+                "[12".to_string(),
+                vec![
+                    VocabularySpellElement::Compound((
+                        r"[".to_string().try_into().unwrap(),
+                        NonZeroUsize::new(1).unwrap()
+                    )),
+                    VocabularySpellElement::Normal("1".to_string().try_into().unwrap()),
+                    VocabularySpellElement::Normal("2".to_string().try_into().unwrap()),
+                ]
+            )
+            .unwrap(),]
         );
 
         assert_eq!(iln, vec![2]);
