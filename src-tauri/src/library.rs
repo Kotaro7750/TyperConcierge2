@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fs::{create_dir, File},
     io::Read,
+    num::NonZeroUsize,
     path::{Path, PathBuf},
 };
 
@@ -10,7 +11,7 @@ use tauri::{
     api::dir::{is_dir, read_dir},
     PathResolver,
 };
-use typing_engine::{SpellString, VocabularyEntry, VocabularySpell};
+use typing_engine::{SpellString, VocabularyEntry, VocabularySpellElement};
 
 pub struct Library {
     library_dir_path: PathBuf,
@@ -256,14 +257,20 @@ fn parse_dictionary_content(file_content: &str) -> (Vec<VocabularyEntry>, Vec<us
 
             if let Some(spell_strings) = construct_spell_strings(&spells) {
                 // 語彙が複数文字で綴りの個数が1つしかないときには熟字訓とみなす
-                let spell = if view.chars().count() > 1 && spell_strings.len() == 1 {
-                    VocabularySpell::Compound(spell_strings[0].clone())
+                let spells = if view.chars().count() > 1 && spell_strings.len() == 1 {
+                    vec![VocabularySpellElement::Compound((
+                        spell_strings[0].clone(),
+                        NonZeroUsize::new(view.chars().count()).unwrap(),
+                    ))]
                 } else {
-                    VocabularySpell::Normal(spell_strings)
+                    spell_strings
+                        .iter()
+                        .map(|spell_string| VocabularySpellElement::Normal(spell_string.clone()))
+                        .collect()
                 };
 
                 //
-                if let Some(vocabulary_entry) = VocabularyEntry::new(view.clone(), spell) {
+                if let Some(vocabulary_entry) = VocabularyEntry::new(view.clone(), spells) {
                     vocabulary_entries.push(vocabulary_entry);
                 } else {
                     invalid_line_numbers.push(line_number);
@@ -334,7 +341,8 @@ fn split_by_exclude_repeated(line: &str, separator: char) -> Vec<String> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use typing_engine::{VocabularyEntry, VocabularySpell};
+    use std::num::NonZeroUsize;
+    use typing_engine::{VocabularyEntry, VocabularySpellElement};
 
     #[test]
     fn split_by_exclude_repeated_1() {
@@ -363,20 +371,23 @@ mod test {
         assert_eq!(
             ve,
             vec![
-            VocabularyEntry::new(
-                "頑張る".to_string(),
-                VocabularySpell::Normal(vec![
-                    "がん".to_string().try_into().unwrap(),
-                    "ば".to_string().try_into().unwrap(),
-                    "る".to_string().try_into().unwrap(),
-                ])
-            )
-            .unwrap(),
-            VocabularyEntry::new(
-                "百舌鳥".to_string(),
-                VocabularySpell::Compound("もず".to_string().try_into().unwrap())
-            )
-            .unwrap()
+                VocabularyEntry::new(
+                    "頑張る".to_string(),
+                    vec![
+                        VocabularySpellElement::Normal("がん".to_string().try_into().unwrap()),
+                        VocabularySpellElement::Normal("ば".to_string().try_into().unwrap()),
+                        VocabularySpellElement::Normal("る".to_string().try_into().unwrap())
+                    ]
+                )
+                .unwrap(),
+                VocabularyEntry::new(
+                    "百舌鳥".to_string(),
+                    vec![VocabularySpellElement::Compound((
+                        "もず".to_string().try_into().unwrap(),
+                        NonZeroUsize::new(3).unwrap()
+                    ))]
+                )
+                .unwrap()
             ]
         );
 
