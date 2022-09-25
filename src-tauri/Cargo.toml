@@ -19,7 +19,7 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.0.5", features = ["api-all"] }
 once_cell = "1.13.1"
-typing_engine = { path = "../../typing_engine" }
+typing_engine = { version = "0.1.0", path = "../../typing_engine" }
 
 [features]
 # by default Tauri runs in production mode
