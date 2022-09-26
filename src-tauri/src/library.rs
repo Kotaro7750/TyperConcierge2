@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     fs::{create_dir, File},
     io::Read,
     num::NonZeroUsize,
@@ -245,33 +245,50 @@ fn parse_dictionary_content(file_content: &str) -> (Vec<VocabularyEntry>, Vec<us
     let mut invalid_line_numbers = Vec::<usize>::new();
 
     for (i, line) in file_content.lines().enumerate() {
-        let elements: Vec<String> = split_by_exclude_repeated(line, ':');
+        let elements: Vec<String> = split_by_non_escaped(line, ':');
         // 行数は1行目から始まる
         let line_number = i + 1;
 
+        // 有効な行は語彙と綴りの2つを:で区切られている
         if elements.len() == 2 {
             let view = elements.get(0).unwrap();
             let spells_str = elements.get(1).unwrap();
 
-            let spells = split_by_exclude_repeated(spells_str, ',');
+            if let Some((view, view_parts_counts)) = remove_square_parentheses(view) {
+                let spells = split_by_non_escaped(spells_str, ',');
 
-            if let Some(spell_strings) = construct_spell_strings(&spells) {
-                // 語彙が複数文字で綴りの個数が1つしかないときには熟字訓とみなす
-                let spells = if view.chars().count() > 1 && spell_strings.len() == 1 {
-                    vec![VocabularySpellElement::Compound((
-                        spell_strings[0].clone(),
-                        NonZeroUsize::new(view.chars().count()).unwrap(),
-                    ))]
-                } else {
-                    spell_strings
-                        .iter()
-                        .map(|spell_string| VocabularySpellElement::Normal(spell_string.clone()))
-                        .collect()
-                };
+                // spellsの中の2連バックスラッシュを解決する
+                let spells: Vec<String> = spells
+                    .iter()
+                    .map(|spell| convert_two_backslash_to_single(spell))
+                    .collect();
 
-                //
-                if let Some(vocabulary_entry) = VocabularyEntry::new(view.clone(), spells) {
-                    vocabulary_entries.push(vocabulary_entry);
+                // 語彙のまとまりの数と綴りのまとまりの数が一致している必要がある
+                if spells.len() == view_parts_counts.len() {
+                    if let Some(spell_strings) = construct_spell_strings(&spells) {
+                        let spells: Vec<VocabularySpellElement> = spell_strings
+                            .iter()
+                            .zip(view_parts_counts)
+                            .map(|(spell, count)| {
+                                if count == 1 {
+                                    VocabularySpellElement::Normal(spell.clone())
+                                } else {
+                                    VocabularySpellElement::Compound((
+                                        spell.clone(),
+                                        NonZeroUsize::new(count).unwrap(),
+                                    ))
+                                }
+                            })
+                            .collect();
+
+                        if let Some(vocabulary_entry) = VocabularyEntry::new(view.clone(), spells) {
+                            vocabulary_entries.push(vocabulary_entry);
+                        } else {
+                            invalid_line_numbers.push(line_number);
+                        }
+                    } else {
+                        invalid_line_numbers.push(line_number);
+                    }
                 } else {
                     invalid_line_numbers.push(line_number);
                 }
@@ -301,41 +318,182 @@ fn construct_spell_strings(strs: &[String]) -> Option<Vec<SpellString>> {
     Some(spell_strings)
 }
 
-// それぞれの行をセパレータで分割する
-// ただし2連続のセパレータはセパレータ文字そのものとみなす
-fn split_by_exclude_repeated(line: &str, separator: char) -> Vec<String> {
-    let mut is_prev_separator = false;
+/// それぞれの行をセパレータで分割する
+/// ただしバックスラッシュでエスケープされたセパレータはセパレータ文字そのものとみなす
+/// それらの文字以外につけられたバックスラッシュはそのまま保持する
+fn split_by_non_escaped(line: &str, separator: char) -> Vec<String> {
+    assert_ne!(separator, '\\');
 
     let mut splitted = Vec::<String>::new();
-
     let mut element = String::new();
+
+    let mut is_prev_escape = false;
 
     for char in line.chars() {
         if char == separator {
-            // 2連続でセパレータだったらセパレータ文字そのものとして扱う
-            if is_prev_separator {
+            if is_prev_escape {
                 element.push(char);
-                is_prev_separator = false;
+
+                is_prev_escape = false;
             } else {
-                is_prev_separator = true;
+                splitted.push(element.clone());
+                element.clear();
+
+                is_prev_escape = false;
+            }
+        } else if char == '\\' {
+            if is_prev_escape {
+                element.push(char);
+                element.push(char);
+
+                is_prev_escape = false;
+            } else {
+                is_prev_escape = true;
             }
         } else {
-            if is_prev_separator {
-                splitted.push(element.clone());
-                element.clear()
+            if is_prev_escape {
+                element.push('\\');
             }
 
             element.push(char);
-            is_prev_separator = false;
+
+            is_prev_escape = false;
         }
     }
+
     splitted.push(element);
 
-    if is_prev_separator {
-        splitted.push(String::new());
+    splitted
+}
+
+/// 角括弧([])を除去し囲まれた部分をひとまとまりとしたそれぞれに何文字あるかを構築する
+/// バックスラッシュでエスケープされた角括弧・バックスラッシュは角括弧・バックスラッシュそのものとして扱う
+/// ネストされていたり対応が取れていなかったらNoneを返す
+/// それ以外のバックスラッシュは特に何もしない
+fn remove_square_parentheses(s: &str) -> Option<(String, Vec<usize>)> {
+    // 2段階で構築する
+    // 1. 角括弧を除去しながら囲まれた部分の位置(除去後の文字列における始まりと終わりのインデックス)を記録する
+    // 2. 囲まれた部分の位置をもとにひとまとまりに何文字あるかを構築する
+    let mut string = String::new();
+    let mut surround_positions = VecDeque::<(usize, usize)>::new();
+
+    let mut is_prev_escape = false;
+    let mut i = 0;
+    let mut start_i: Option<usize> = None;
+
+    // 1.
+    for char in s.chars() {
+        if char == '[' {
+            if is_prev_escape {
+                string.push(char);
+
+                i += 1;
+            } else {
+                if start_i.is_some() {
+                    return None;
+                }
+                start_i.replace(i);
+            }
+            is_prev_escape = false;
+        } else if char == ']' {
+            if is_prev_escape {
+                string.push(char);
+
+                i += 1;
+            } else {
+                if start_i.is_none() {
+                    return None;
+                } else {
+                    // 中に1文字も含まない括弧は許容しない
+                    if *start_i.as_ref().unwrap() == i {
+                        return None;
+                    }
+                    surround_positions.push_back((*start_i.as_ref().unwrap(), i - 1));
+                    start_i.take();
+                }
+            }
+
+            is_prev_escape = false;
+        } else if char == '\\' {
+            if is_prev_escape {
+                string.push(char);
+                i += 1;
+
+                is_prev_escape = false;
+            } else {
+                is_prev_escape = true;
+            }
+        } else {
+            if is_prev_escape {
+                string.push('\\');
+                i += 1;
+            }
+
+            string.push(char);
+            i += 1;
+
+            is_prev_escape = false;
+        }
     }
 
-    splitted
+    // 最後になっても対応する括弧がないならNone
+    if start_i.is_some() {
+        return None;
+    }
+
+    // 2.
+    let mut character_counts: Vec<usize> = vec![];
+    string.chars().enumerate().for_each(|(i, _)| {
+        let front_position = surround_positions.front();
+
+        if let Some((pos_start_i, pos_end_i)) = front_position {
+            assert!(pos_end_i >= pos_start_i);
+            assert!(i <= *pos_end_i);
+
+            if *pos_start_i <= i && i <= *pos_end_i {
+                if i == *pos_end_i {
+                    character_counts.push(pos_end_i - pos_start_i + 1);
+                    surround_positions.pop_front();
+                }
+            } else {
+                character_counts.push(1);
+            }
+        } else {
+            character_counts.push(1);
+        }
+    });
+
+    Some((string, character_counts))
+}
+
+/// 2回連続でバックスラッシュが出てきたらそれをひとつにする
+fn convert_two_backslash_to_single(s: &str) -> String {
+    let mut string = String::new();
+
+    let mut is_prev_escape = false;
+    for char in s.chars() {
+        if char == '\\' {
+            if is_prev_escape {
+                string.push(char);
+                is_prev_escape = false;
+            } else {
+                is_prev_escape = true;
+            }
+        } else {
+            if is_prev_escape {
+                string.push('\\');
+            }
+
+            string.push(char);
+            is_prev_escape = false;
+        }
+    }
+
+    if is_prev_escape {
+        string.push('\\');
+    }
+
+    string
 }
 
 #[cfg(test)]
@@ -345,22 +503,67 @@ mod test {
     use typing_engine::{VocabularyEntry, VocabularySpellElement};
 
     #[test]
-    fn split_by_exclude_repeated_1() {
-        let v = split_by_exclude_repeated("hoge:::fuga:", ':');
+    fn split_by_non_escaped_1() {
+        let v = split_by_non_escaped(r"hoge\\\::", ':');
+        assert_eq!(v, vec![String::from(r"hoge\\:"), String::from("")]);
+    }
+
+    #[test]
+    fn split_by_non_escaped_2() {
+        let v = split_by_non_escaped(r"hoge:fuga", ':');
+        assert_eq!(v, vec![String::from(r"hoge"), String::from("fuga")]);
+    }
+
+    #[test]
+    fn split_by_non_escaped_3() {
+        let v = split_by_non_escaped(r"::", ':');
         assert_eq!(
             v,
-            vec![
-                String::from("hoge:"),
-                String::from("fuga"),
-                String::from("")
-            ]
+            vec![String::from(""), String::from(""), String::from("")]
         );
     }
 
     #[test]
-    fn split_by_exclude_repeated_2() {
-        let v = split_by_exclude_repeated("hoge:fuga", ':');
-        assert_eq!(v, vec![String::from("hoge"), String::from("fuga")]);
+    fn remove_square_parentheses_1() {
+        assert_eq!(
+            remove_square_parentheses(r"a[123\]]b[c]"),
+            Some(("a123]bc".to_string(), vec![1, 4, 1, 1]))
+        );
+    }
+
+    #[test]
+    fn remove_square_parentheses_2() {
+        assert_eq!(remove_square_parentheses(r"[[]]"), None);
+    }
+
+    #[test]
+    fn remove_square_parentheses_3() {
+        assert_eq!(remove_square_parentheses(r"a[bdf\["), None);
+    }
+
+    #[test]
+    fn remove_square_parentheses_4() {
+        assert_eq!(remove_square_parentheses(r"[]"), None);
+    }
+
+    #[test]
+    fn convert_two_backslash_to_single_1() {
+        assert_eq!(convert_two_backslash_to_single(r"\\"), r"\");
+    }
+
+    #[test]
+    fn convert_two_backslash_to_single_2() {
+        assert_eq!(convert_two_backslash_to_single(r"\\\a"), r"\\a");
+    }
+
+    #[test]
+    fn convert_two_backslash_to_single_3() {
+        assert_eq!(convert_two_backslash_to_single(r"\\\"), r"\\");
+    }
+
+    #[test]
+    fn convert_two_backslash_to_single_4() {
+        assert_eq!(convert_two_backslash_to_single(r"\\\\"), r"\\");
     }
 
     #[test]
@@ -432,7 +635,7 @@ mod test {
         assert_eq!(
             ve,
             vec![VocabularyEntry::new(
-                "\\:".to_string(),
+                r"\:".to_string(),
                 vec![
                     VocabularySpellElement::Normal(r"\".to_string().try_into().unwrap()),
                     VocabularySpellElement::Normal(":".to_string().try_into().unwrap()),
@@ -456,10 +659,7 @@ mod test {
             vec![VocabularyEntry::new(
                 "[12".to_string(),
                 vec![
-                    VocabularySpellElement::Compound((
-                        r"[".to_string().try_into().unwrap(),
-                        NonZeroUsize::new(1).unwrap()
-                    )),
+                    VocabularySpellElement::Normal(r"[".to_string().try_into().unwrap()),
                     VocabularySpellElement::Normal("1".to_string().try_into().unwrap()),
                     VocabularySpellElement::Normal("2".to_string().try_into().unwrap()),
                 ]
