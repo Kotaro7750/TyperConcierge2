@@ -6,6 +6,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
   // tauri側から取得する辞書情報
   type DictionaryInfoFromCore = {
     dictionary_type: DictionaryType,
+    origin: DictionaryOrigin,
     invalid_line_numbers: number[],
     name: string,
     valid_vocabulary_count: number,
@@ -18,11 +19,16 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
 
   type QueryRequestToCore = {
     dictionaryType: DictionaryType,
-    usedDictionaryNames: string[],
+    usedDictionaries: [DictionaryOrigin, String][],
     keyStrokeCountThreshold?: number,
   }
 
-  type LibraryReducerActionType = { type: 'use', dictionaryName: string } | { type: 'disuse', dictionaryName: string } | { type: 'load', availableDictionaryList: CategorizedDictionaryInfoList } | { type: 'type', dictionaryType: DictionaryType } | { type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: number };
+  type LibraryReducerActionType =
+    { type: 'use', dictionaryName: string, dictionaryOrigin: DictionaryOrigin }
+    | { type: 'disuse', dictionaryName: string, dictionaryOrigin: DictionaryOrigin }
+    | { type: 'load', availableDictionaryList: CategorizedDictionaryInfoList }
+    | { type: 'type', dictionaryType: DictionaryType }
+    | { type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: number };
 
   type CategorizedDictionaryInfoList = {
     word: DictionaryInfo[],
@@ -32,15 +38,15 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
   // Libraryとは異なり現在有効な辞書タイプではない方も保持する
   type LibraryInner = {
     availableDictionaries: CategorizedDictionaryInfoList,
-    usedDictionaryNames: {
-      word: string[],
-      sentence: string[],
+    usedDictionaries: {
+      word: [DictionaryOrigin, string][],
+      sentence: [DictionaryOrigin, string][],
     },
     usedDictionaryType: DictionaryType,
     keyStrokeCountThreshold: number,
   }
 
-  const existInAvailableDictionary = (availableDictionaryList: CategorizedDictionaryInfoList, dictionaryName: string, vocabularyType: DictionaryType) => {
+  const existInAvailableDictionary = (availableDictionaryList: CategorizedDictionaryInfoList, dictionaryName: string, vocabularyType: DictionaryType, dictionaryOrigin: DictionaryOrigin) => {
     const dictionaryInfoList = vocabularyType == 'word' ? availableDictionaryList.word : availableDictionaryList.sentence;
 
     for (let dictionaryInfo of dictionaryInfoList) {
@@ -48,7 +54,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
         throw new Error(`VocabularyType mismatch in ${dictionaryInfo.name} expected ${vocabularyType}, but ${dictionaryInfo.type}`);
       }
 
-      if (dictionaryInfo.name == dictionaryName) {
+      if (dictionaryInfo.name == dictionaryName && dictionaryInfo.origin == dictionaryOrigin) {
         return true;
       }
     }
@@ -61,58 +67,58 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
     switch (action.type) {
       // 現在有効になっている辞書タイプで利用可能な辞書から追加する
       case 'use':
-        if (!existInAvailableDictionary(state.availableDictionaries, action.dictionaryName, state.usedDictionaryType)) {
+        if (!existInAvailableDictionary(state.availableDictionaries, action.dictionaryName, state.usedDictionaryType, action.dictionaryOrigin)) {
           throw new Error(`use dictionary(${action.dictionaryName}) not in availableDictionaryList`);
         }
 
         // 現在有効になっている辞書タイプによって追加する場所を切り替える
-        const addedUsedDictionaryFileNameList: { word: string[], sentence: string[] } = state.usedDictionaryType == 'word' ? {
-          word: state.usedDictionaryNames.word.concat([action.dictionaryName]),
-          sentence: state.usedDictionaryNames.sentence,
+        const addedUsedDictionaries: { word: [DictionaryOrigin, string][], sentence: [DictionaryOrigin, string][] } = state.usedDictionaryType == 'word' ? {
+          word: state.usedDictionaries.word.concat([[action.dictionaryOrigin, action.dictionaryName]]),
+          sentence: state.usedDictionaries.sentence,
         } : {
-          word: state.usedDictionaryNames.word,
-          sentence: state.usedDictionaryNames.sentence.concat([action.dictionaryName]),
+          word: state.usedDictionaries.word,
+          sentence: state.usedDictionaries.sentence.concat([[action.dictionaryOrigin, action.dictionaryName]]),
         };
 
         return {
           availableDictionaries: state.availableDictionaries,
-          usedDictionaryNames: addedUsedDictionaryFileNameList,
+          usedDictionaries: addedUsedDictionaries,
           usedDictionaryType: state.usedDictionaryType,
           keyStrokeCountThreshold: state.keyStrokeCountThreshold,
         };
 
       // 現在有効になっている辞書タイプで利用可能な辞書を不使用とする
       case 'disuse':
-        if (!existInAvailableDictionary(state.availableDictionaries, action.dictionaryName, state.usedDictionaryType)) {
+        if (!existInAvailableDictionary(state.availableDictionaries, action.dictionaryName, state.usedDictionaryType, action.dictionaryOrigin)) {
           throw new Error(`disuse dictionary(${action.dictionaryName}) not in availableDictionaryList`);
         }
 
-        const deletedUsedDictionaryFileNameList: { word: string[], sentence: string[] } = state.usedDictionaryType == 'word' ? {
-          word: state.usedDictionaryNames.word.filter(e => e !== action.dictionaryName),
-          sentence: state.usedDictionaryNames.sentence,
+        const deletedUsedDictionaryFileNameList: { word: [DictionaryOrigin, string][], sentence: [DictionaryOrigin, string][] } = state.usedDictionaryType == 'word' ? {
+          word: state.usedDictionaries.word.filter(e => e[0] !== action.dictionaryOrigin || e[1] !== action.dictionaryName),
+          sentence: state.usedDictionaries.sentence,
         } : {
-          word: state.usedDictionaryNames.word,
-          sentence: state.usedDictionaryNames.sentence.filter(e => e !== action.dictionaryName),
+          word: state.usedDictionaries.word,
+          sentence: state.usedDictionaries.sentence.filter(e => e[0] !== action.dictionaryOrigin || e[1] !== action.dictionaryName),
         };
 
 
         return {
           availableDictionaries: state.availableDictionaries,
-          usedDictionaryNames: deletedUsedDictionaryFileNameList,
+          usedDictionaries: deletedUsedDictionaryFileNameList,
           usedDictionaryType: state.usedDictionaryType,
           keyStrokeCountThreshold: state.keyStrokeCountThreshold,
         };
 
       case 'load':
-        const wordAvailableDictionaryNameList = action.availableDictionaryList.word.map(e => e.name);
-        const sentenceAvailableDictionaryNameList = action.availableDictionaryList.sentence.map(e => e.name);
+        const wordAvailableDictionaryNameList = action.availableDictionaryList.word.map(e => [e.origin, e.name]);
+        const sentenceAvailableDictionaryNameList = action.availableDictionaryList.sentence.map(e => [e.origin, e.name]);
 
         return {
           availableDictionaries: action.availableDictionaryList,
           // 使用すると選択した辞書であっても使用可能な辞書からなくなっている可能性があるので排除する必要がある
-          usedDictionaryNames: {
-            word: state.usedDictionaryNames.word.filter(e => wordAvailableDictionaryNameList.includes(e)),
-            sentence: state.usedDictionaryNames.sentence.filter(e => sentenceAvailableDictionaryNameList.includes(e)),
+          usedDictionaries: {
+            word: state.usedDictionaries.word.filter(e => wordAvailableDictionaryNameList.includes(e)),
+            sentence: state.usedDictionaries.sentence.filter(e => sentenceAvailableDictionaryNameList.includes(e)),
           },
           usedDictionaryType: state.usedDictionaryType,
           keyStrokeCountThreshold: state.keyStrokeCountThreshold,
@@ -122,7 +128,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
       case 'type':
         return {
           availableDictionaries: state.availableDictionaries,
-          usedDictionaryNames: state.usedDictionaryNames,
+          usedDictionaries: state.usedDictionaries,
           usedDictionaryType: action.dictionaryType,
           keyStrokeCountThreshold: state.keyStrokeCountThreshold,
         };
@@ -131,7 +137,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
       case 'keyStrokeCountThreshold':
         return {
           availableDictionaries: state.availableDictionaries,
-          usedDictionaryNames: state.usedDictionaryNames,
+          usedDictionaries: state.usedDictionaries,
           usedDictionaryType: state.usedDictionaryType,
           keyStrokeCountThreshold: action.keyStrokeCountThreshold,
         };
@@ -148,6 +154,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
       categorizedDictionaryInfos.word.forEach(wordDictionary => {
         availableDictionaryList.word.push({
           name: wordDictionary.name,
+          origin: wordDictionary.origin,
           type: 'word',
           validVocabularyCount: wordDictionary.valid_vocabulary_count,
           invalidLineNumberList: wordDictionary.invalid_line_numbers,
@@ -158,6 +165,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
         availableDictionaryList.sentence.push({
           name: sentenceDictionary.name,
           type: 'sentence',
+          origin: sentenceDictionary.origin,
           validVocabularyCount: sentenceDictionary.valid_vocabulary_count,
           invalidLineNumberList: sentenceDictionary.invalid_line_numbers,
         });
@@ -168,7 +176,7 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
   };
 
   const confirmQuery = () => {
-    let request: QueryRequestToCore = { dictionaryType: effectiveVocabularyType, usedDictionaryNames: effectiveUsedDictionaryNames };
+    let request: QueryRequestToCore = { dictionaryType: effectiveVocabularyType, usedDictionaries: effectiveUsedDictionaries };
 
     if (effectiveVocabularyType == 'word') {
       request.keyStrokeCountThreshold = innerLibrary.keyStrokeCountThreshold;
@@ -181,10 +189,10 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
   const operator = (action: LibraryOperatorActionType) => {
     switch (action.type) {
       case 'use':
-        dispatchLibrary({ type: 'use', dictionaryName: action.dictionaryName });
+        dispatchLibrary({ type: 'use', dictionaryName: action.dictionaryName, dictionaryOrigin: action.dictionaryOrigin });
         break;
       case 'disuse':
-        dispatchLibrary({ type: 'disuse', dictionaryName: action.dictionaryName });
+        dispatchLibrary({ type: 'disuse', dictionaryName: action.dictionaryName, dictionaryOrigin: action.dictionaryOrigin });
         break;
       case 'load':
         loadAvailableDictionaryList();
@@ -208,18 +216,18 @@ export function useLibrary(): [Library, (action: LibraryOperatorActionType) => v
 
   const [innerLibrary, dispatchLibrary] = useReducer(libraryReducer, {
     availableDictionaries: { word: [], sentence: [] },
-    usedDictionaryNames: { word: [], sentence: [] },
+    usedDictionaries: { word: [], sentence: [] },
     usedDictionaryType: 'word',
     keyStrokeCountThreshold: 150,
   });
 
   // 返却する型は現在有効な辞書タイプの情報のみを持つ
   const effectiveVocabularyType = innerLibrary.usedDictionaryType;
-  const effectiveUsedDictionaryNames = effectiveVocabularyType == 'word' ? innerLibrary.usedDictionaryNames.word : innerLibrary.usedDictionaryNames.sentence;
+  const effectiveUsedDictionaries = effectiveVocabularyType == 'word' ? innerLibrary.usedDictionaries.word : innerLibrary.usedDictionaries.sentence;
   const effectiveAvailableDictionaries = effectiveVocabularyType == 'word' ? innerLibrary.availableDictionaries.word : innerLibrary.availableDictionaries.sentence;
 
   const library: Library = {
-    usedDictionaryNames: effectiveUsedDictionaryNames,
+    usedDictionaries: effectiveUsedDictionaries,
     availableDictionaries: effectiveAvailableDictionaries,
     usedDictionaryType: effectiveVocabularyType,
     keyStrokeCountThreshold: innerLibrary.keyStrokeCountThreshold,

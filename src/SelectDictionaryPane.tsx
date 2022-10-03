@@ -1,16 +1,16 @@
 import React from 'react';
 
-export function SelectDictionaryPane(props: { availableDictionaryList: DictionaryInfo[], usedDictionaryList: string[], libraryOperator: (action: LibraryOperatorActionType) => void }): JSX.Element {
-  const usedDictionaryOneHot = new Map<string, boolean>(props.usedDictionaryList.map(e => [e, true]));
+export function SelectDictionaryPane(props: { availableDictionaryList: DictionaryInfo[], usedDictionaryList: [DictionaryOrigin, string][], libraryOperator: (action: LibraryOperatorActionType) => void }): JSX.Element {
+  const usedDictionaryOneHot = new Map<string, boolean>(props.usedDictionaryList.map(e => [`${e[0]} ${e[1]}`, true]));
 
   const elem: JSX.Element[] = [];
 
   // 辞書リストのそれぞれの辞書をトグルしたときのハンドラ
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function onChange(e: React.ChangeEvent<HTMLInputElement>, dictionaryName: string, dictionaryOrigin: DictionaryOrigin) {
     if (e.target.checked) {
-      props.libraryOperator({ type: 'use', dictionaryName: e.target.value });
+      props.libraryOperator({ type: 'use', dictionaryName: dictionaryName, dictionaryOrigin: dictionaryOrigin });
     } else {
-      props.libraryOperator({ type: 'disuse', dictionaryName: e.target.value });
+      props.libraryOperator({ type: 'disuse', dictionaryName: dictionaryName, dictionaryOrigin: dictionaryOrigin });
     }
   }
 
@@ -33,10 +33,10 @@ export function SelectDictionaryPane(props: { availableDictionaryList: Dictionar
 
   // 辞書リストのそれぞれの項目を構築
   sortedAvailableDictionaryList.forEach((dictionaryInfo: DictionaryInfo, i: number) => {
-    const dictionaryName = dictionaryInfo.name;
+    const dictionaryName = dictionaryInfo.origin === 'user_defined' ? `${dictionaryInfo.name}` : `${dictionaryInfo.name}`;
     const enable = dictionaryInfo.validVocabularyCount !== 0;
     // XXX 文と単語の辞書の名前に被りがあった時に衝突しないか
-    const used = usedDictionaryOneHot.has(dictionaryName);
+    const used = usedDictionaryOneHot.has(`${dictionaryInfo.origin} ${dictionaryInfo.name}`);
 
     // 辞書に無効な語彙を含むときの警告文の生成
     let containErrorTooltipText = DICTIONARY_CONTAIN_ERROR_TOOLTIP_TEXT_BASE;
@@ -46,7 +46,7 @@ export function SelectDictionaryPane(props: { availableDictionaryList: Dictionar
 
     const checkbox = (
       <label key={i} className={`d-flex text-break list-group-item w-100 btn ${used && 'active'} `}>
-        <input className='btn-check' type='checkbox' value={dictionaryName} onChange={onChange} checked={used} disabled={!enable} />
+        <input className='btn-check' type='checkbox' value={dictionaryName} onChange={(e) => onChange(e, dictionaryInfo.name, dictionaryInfo.origin)} checked={used} disabled={!enable} />
 
         <span className={`text-start ${!enable && 'text-secondary'}`}>{dictionaryName}</span>
 

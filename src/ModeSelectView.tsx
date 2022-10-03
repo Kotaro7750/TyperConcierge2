@@ -11,10 +11,10 @@ export function ModeSelectView() {
   const gameStateContext = useContext(GameStateContext);
 
   // NOTE: 分割代入を使っていこう cf. <https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment>
-  const { library: { usedDictionaryType, usedDictionaryNames, availableDictionaries, keyStrokeCountThreshold }, libraryOperator } = useContext(LibraryContext);
+  const { library: { usedDictionaryType, usedDictionaries: usedDictionaries, availableDictionaries, keyStrokeCountThreshold }, libraryOperator } = useContext(LibraryContext);
 
   const canStart = () => {
-    return usedDictionaryNames.length !== 0;
+    return usedDictionaries.length !== 0;
   }
 
   const confirmReady = () => {
@@ -71,7 +71,7 @@ export function ModeSelectView() {
         </div>
 
         <div className='h-25 row p-2 border border-secondary rounded-3 border-2 bg-white'>
-          <SelectDictionaryPane availableDictionaryList={availableDictionaries} usedDictionaryList={usedDictionaryNames} libraryOperator={libraryOperator} />
+          <SelectDictionaryPane availableDictionaryList={availableDictionaries} usedDictionaryList={usedDictionaries} libraryOperator={libraryOperator} />
         </div>
 
         {

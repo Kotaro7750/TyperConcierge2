@@ -12,7 +12,7 @@ use typing_engine::{
     VocabularyQuantifier, VocabularySeparator,
 };
 
-use library::{CategorizedDictionaryInfos, DictionaryType, Library};
+use library::{CategorizedDictionaryInfos, DictionaryOrigin, DictionaryType, Library};
 
 mod display_info;
 mod library;
@@ -35,7 +35,7 @@ impl From<TypingEngineError> for ToUIError {
 #[serde(rename_all = "camelCase")]
 struct QueryRequestFromUI {
     dictionary_type: DictionaryType,
-    used_dictionary_names: Vec<String>,
+    used_dictionaries: Vec<(DictionaryOrigin, String)>,
     key_stroke_count_threshold: Option<NonZeroUsize>,
 }
 
@@ -64,7 +64,7 @@ fn confirm_query(
 
     let vocabulary_entries = locked_library.vocabulary_entries_of_request(
         query_request_from_ui.dictionary_type,
-        &query_request_from_ui.used_dictionary_names,
+        &query_request_from_ui.used_dictionaries,
     );
 
     let query_request = QueryRequest::new(
@@ -130,6 +130,13 @@ fn main() {
                 create_dir_all(&app_dir).unwrap();
             }
             assert!(app_dir.exists());
+
+            // 組み込み辞書用のディレクトリが無かったら作る
+            let builtin_dictionary_dir = app
+                .path_resolver()
+                .resolve_resource("../builtin_dictionary/hoge.txt")
+                .unwrap();
+            println!("hoge{:?}", builtin_dictionary_dir);
 
             app.manage(Mutex::new(Library::new(app.path_resolver())));
 

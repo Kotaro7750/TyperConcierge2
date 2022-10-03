@@ -7,21 +7,30 @@ interface GameStateContext {
 
 type DictionaryType = 'word' | 'sentence';
 
+type DictionaryOrigin = 'user_defined' | 'builtin';
+
 type DictionaryInfo = {
   name: string,
   type: DictionaryType,
+  origin: DictionaryOrigin,
   invalidLineNumberList: number[],
   validVocabularyCount: number,
 }
 
 type Library = {
-  readonly usedDictionaryNames: string[],
+  readonly usedDictionaries: [DictionaryOrigin, string][],
   readonly availableDictionaries: DictionaryInfo[],
   readonly usedDictionaryType: DictionaryType,
   readonly keyStrokeCountThreshold: number,
 }
 
-type LibraryOperatorActionType = { type: 'use', dictionaryName: string } | { type: 'disuse', dictionaryName: string } | { type: 'load' } | { type: 'type', dictionaryType: DictionaryType } | { type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: number } | { type: 'confirmQuery' };
+type LibraryOperatorActionType =
+  { type: 'use', dictionaryName: string, dictionaryOrigin: DictionaryOrigin }
+  | { type: 'disuse', dictionaryName: string, dictionaryOrigin: DictionaryOrigin }
+  | { type: 'load' }
+  | { type: 'type', dictionaryType: DictionaryType }
+  | { type: 'keyStrokeCountThreshold', keyStrokeCountThreshold: number }
+  | { type: 'confirmQuery' };
 
 
 type ViewDisplayInfo = {

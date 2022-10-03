@@ -14,26 +14,37 @@ use tauri::{
 use typing_engine::{SpellString, VocabularyEntry, VocabularySpellElement};
 
 pub struct Library {
-    library_dir_path: PathBuf,
-    word_dictionaries: HashMap<String, Dictionary>,
-    sentence_dictionaries: HashMap<String, Dictionary>,
+    user_defined_library_dir: PathBuf,
+    builtin_library_dir: PathBuf,
+    word_dictionaries: HashMap<(DictionaryOrigin, String), Dictionary>,
+    sentence_dictionaries: HashMap<(DictionaryOrigin, String), Dictionary>,
 }
 
 impl Library {
     pub fn new(path_resolver: PathResolver) -> Self {
-        let mut library_dir_path = path_resolver.app_dir().unwrap();
-        library_dir_path.push("library");
+        let mut user_defined_library_dir = path_resolver.app_dir().unwrap();
+        user_defined_library_dir.push("library");
 
-        if !library_dir_path.exists() {
-            create_dir(&library_dir_path).unwrap();
+        let builtin_library_dir = path_resolver
+            .resolve_resource("../builtin_dictionary/")
+            .unwrap();
+
+        if !user_defined_library_dir.exists() {
+            create_dir(&user_defined_library_dir).unwrap();
         }
 
-        assert!(library_dir_path.exists());
+        assert!(user_defined_library_dir.exists());
 
-        let dictionaries: HashMap<String, Dictionary> = construct_dictionaries(&library_dir_path)
-            .drain(..)
-            .map(|dictionary| (dictionary.name().to_string(), dictionary))
-            .collect();
+        let dictionaries: HashMap<(DictionaryOrigin, String), Dictionary> =
+            construct_dictionaries(&user_defined_library_dir, &builtin_library_dir)
+                .drain(..)
+                .map(|dictionary| {
+                    (
+                        (dictionary.origin.clone(), dictionary.name().to_string()),
+                        dictionary,
+                    )
+                })
+                .collect();
 
         let (word_dictionaries, sentence_dictionaries) = dictionaries
             .into_iter()
@@ -42,7 +53,8 @@ impl Library {
         Self {
             word_dictionaries,
             sentence_dictionaries,
-            library_dir_path,
+            user_defined_library_dir,
+            builtin_library_dir,
         }
     }
 
@@ -63,10 +75,15 @@ impl Library {
     // 自身の管理している辞書群を更新する
     pub fn reload_dictionaries(&mut self) {
         // TODO タイムスタンプで更新のいらないファイルは更新しないようにする
-        let dictionaries: HashMap<String, Dictionary> =
-            construct_dictionaries(&self.library_dir_path)
+        let dictionaries: HashMap<(DictionaryOrigin, String), Dictionary> =
+            construct_dictionaries(&self.user_defined_library_dir, &self.builtin_library_dir)
                 .drain(..)
-                .map(|dictionary| (dictionary.name().to_string(), dictionary))
+                .map(|dictionary| {
+                    (
+                        (dictionary.origin.clone(), dictionary.name().to_string()),
+                        dictionary,
+                    )
+                })
                 .collect();
 
         let (word_dictionaries, sentence_dictionaries) = dictionaries
@@ -82,7 +99,7 @@ impl Library {
     pub fn vocabulary_entries_of_request(
         &self,
         request_dictionary_type: DictionaryType,
-        request_dictionary_names: &[impl AsRef<str>],
+        request_dictionaries: &[(DictionaryOrigin, impl AsRef<str>)],
     ) -> Vec<&VocabularyEntry> {
         let mut vocabulary_entries: Vec<&VocabularyEntry> = vec![];
 
@@ -91,8 +108,13 @@ impl Library {
             DictionaryType::Sentence => &self.sentence_dictionaries,
         };
 
-        request_dictionary_names.iter().for_each(|dictionary_name| {
-            let dictionary = dictionaries.get(dictionary_name.as_ref()).unwrap();
+        request_dictionaries.iter().for_each(|dictionary_info| {
+            let dictionary = dictionaries
+                .get(&(
+                    dictionary_info.0.clone(),
+                    dictionary_info.1.as_ref().to_string(),
+                ))
+                .unwrap();
 
             dictionary
                 .vocabulary_entries
@@ -108,19 +130,33 @@ impl Library {
     fn get_dictionary(
         &self,
         dictionary_name: &str,
+        dictionary_origin: DictionaryOrigin,
         dictionary_type: DictionaryType,
     ) -> Option<&Dictionary> {
         match dictionary_type {
-            DictionaryType::Word => self.word_dictionaries.get(dictionary_name),
-            DictionaryType::Sentence => self.sentence_dictionaries.get(dictionary_name),
+            DictionaryType::Word => self
+                .word_dictionaries
+                .get(&(dictionary_origin, dictionary_name.to_string())),
+            DictionaryType::Sentence => self
+                .sentence_dictionaries
+                .get(&(dictionary_origin, dictionary_name.to_string())),
         }
     }
 }
 
-fn construct_dictionaries<P: AsRef<Path>>(library_dir_path: P) -> Vec<Dictionary> {
-    get_dictionary_file_paths(library_dir_path)
+fn construct_dictionaries<P: AsRef<Path>, Q: AsRef<Path>>(
+    user_defined_library_dir: P,
+    builtin_library_dir: Q,
+) -> Vec<Dictionary> {
+    get_dictionary_file_paths(user_defined_library_dir)
         .iter()
-        .map(|path| Dictionary::new(path))
+        .map(|p| (DictionaryOrigin::UserDefined, p))
+        .chain(
+            get_dictionary_file_paths(builtin_library_dir)
+                .iter()
+                .map(|p| (DictionaryOrigin::Builtin, p)),
+        )
+        .map(|(origin, path)| Dictionary::new(path, origin))
         .filter(|may_dictionary| may_dictionary.is_some())
         .map(|some_dictionary| some_dictionary.unwrap())
         .collect()
@@ -159,6 +195,7 @@ impl CategorizedDictionaryInfos {
 pub struct DictionaryInfo {
     name: String,
     dictionary_type: DictionaryType,
+    origin: DictionaryOrigin,
     valid_vocabulary_count: usize,
     invalid_line_numbers: Vec<usize>,
 }
@@ -167,12 +204,14 @@ impl DictionaryInfo {
     fn new(
         name: String,
         dictionary_type: DictionaryType,
+        origin: DictionaryOrigin,
         valid_vocabulary_count: usize,
         invalid_line_numbers: Vec<usize>,
     ) -> Self {
         Self {
             name,
             dictionary_type,
+            origin,
             valid_vocabulary_count,
             invalid_line_numbers,
         }
@@ -186,17 +225,25 @@ pub enum DictionaryType {
     Sentence,
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DictionaryOrigin {
+    Builtin,
+    UserDefined,
+}
+
 // 内部で使う辞書情報
 pub struct Dictionary {
     name: String,
     dictionary_type: DictionaryType,
+    origin: DictionaryOrigin,
     path: PathBuf,
     vocabulary_entries: Vec<VocabularyEntry>,
     invalid_line_numbers: Vec<usize>,
 }
 
 impl Dictionary {
-    fn new<P: AsRef<Path>>(path: P) -> Option<Self> {
+    fn new<P: AsRef<Path>>(path: P, origin: DictionaryOrigin) -> Option<Self> {
         let dictionary_type = match path.as_ref().extension().unwrap().to_str() {
             Some("tconcierges") => DictionaryType::Sentence,
             Some("tconciergew") => DictionaryType::Word,
@@ -215,6 +262,7 @@ impl Dictionary {
         Some(Self {
             name: dictionary_name.to_str()?.to_string(),
             dictionary_type,
+            origin,
             path: path.as_ref().to_owned(),
             vocabulary_entries,
             invalid_line_numbers,
@@ -233,6 +281,7 @@ impl Dictionary {
         DictionaryInfo::new(
             self.name.clone(),
             self.dictionary_type.clone(),
+            self.origin.clone(),
             self.vocabulary_entries.len(),
             self.invalid_line_numbers.clone(),
         )
