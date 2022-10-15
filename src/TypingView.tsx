@@ -62,31 +62,27 @@ export function TypingView() {
   const progressPercentage = keyStrokeDisplayInfo.progress * 100;
 
   return (
-    <>
-      <div className='row'>
-        <div className='col-4 d-flex'>
-          <div className='progress align-self-center h-50 w-100'>
+    <div className='d-flex flex-column h-100 w-100'>
+      <div className='d-flex justify-content-between w-100 px-4' style={{ flexBasis: 'min(10%, 67.5px)' }}>
+        <div className='d-flex align-items-center h-100' style={{ flexBasis: '35%' }}>
+          <div className='progress w-100 h-50'>
             <div className='progress-bar progress-bar-striped progress-bar-animated bg-primary' role='progressbar' style={{ width: `${progressPercentage}%` }} aria-valuenow={progressPercentage} aria-valuemin={0} aria-valuemax={100}>
               {progressPercentage.toFixed(1)}%
             </div>
           </div>
         </div>
-        <div className='col-3 offset-5'>
+        <div className='d-flex align-items-center'>
           <TimerPane elapsedTimeMilli={elapsedTime} />
         </div>
       </div>
 
-      <div className='row mt-3 mx-0'>
-        <div className='col-12'>
-          <OldViewPane viewDisplayInfo={viewDisplayInfo} />
-        </div>
+      <div className='px-4 pb-4 overflow-hidden' style={{ flexBasis: '40%', flexGrow: 1 }}>
+        <OldViewPane viewDisplayInfo={viewDisplayInfo} />
       </div>
 
-      <div className='row mt-3 mx-0'>
-        <div className='col-12'>
-          <KeyStrokePane keyStrokeDisplayInfo={keyStrokeDisplayInfo} />
-        </div>
+      <div className='px-4 pb-4' style={{ flexBasis: '40%', flexGrow: 1 }}>
+        <KeyStrokePane keyStrokeDisplayInfo={keyStrokeDisplayInfo} />
       </div>
-    </>
+    </div>
   );
 }

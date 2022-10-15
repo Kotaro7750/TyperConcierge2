@@ -13,7 +13,7 @@ export function App() {
   const [library, libraryOperator] = useLibrary();
 
   return (
-    <div className='container-fluid'>
+    <div className='vh-100 vw-100'>
       <GameStateContext.Provider value={{ gameState: gameState, setGameState: setGameState }}>
         <LibraryContext.Provider value={{ library: library, libraryOperator: libraryOperator }}>
           {

@@ -77,10 +77,8 @@ export function OldViewPane(props: { viewDisplayInfo: ViewDisplayInfo }): JSX.El
   }, [visualViewport.width, currentLineIndex, inCurrentLineIndexCursorPos, WINDOW_LINE_CAPACITY]);
 
   return (
-    <div className='row'>
-      <div className='col-12 border border-secondary border-3 rounded-3 fs-3 bg-white vh-30' ref={boxDOMRef}>
-        <LineWindow lineList={lineList} currentLineIndex={currentLineIndex} windowCapacity={WINDOW_LINE_CAPACITY} />
-      </div>
+    <div className='w-100 h-100 p-2 border border-secondary border-3 rounded-3 fs-3 bg-white' ref={boxDOMRef}>
+      <LineWindow lineList={lineList} currentLineIndex={currentLineIndex} windowCapacity={WINDOW_LINE_CAPACITY} />
     </div>
   )
 }

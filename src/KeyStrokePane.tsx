@@ -66,7 +66,7 @@ export function KeyStrokePane(props: { keyStrokeDisplayInfo: KeyStrokeDisplayInf
   }
 
   return (
-    <div className='row border border-secondary border-3 rounded-3 bg-white min-vh-40'>
+    <div className='w-100 h-100 p-2 border border-secondary border-3 rounded-3 bg-white'>
       <LineWindow lineList={lapLineList} currentLineIndex={currentLapIndex} windowCapacity={5} />
     </div>
   );
