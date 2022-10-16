@@ -42,8 +42,8 @@ export function ResultView(): JSX.Element {
   });
 
   return (
-    <div className='row my-3 mx-0'>
-      <div className='col-12 p-0 vh-50 w-40 border border-secondary border-3 rounded-3 bg-white'>
+    <div className='w-100 h-100'>
+      <div className='p-0 m-2 vh-50 w-40 border border-secondary border-3 rounded-3 bg-white'>
         <ResultSummaryPane summary={resultStatistics} />
       </div>
     </div>
