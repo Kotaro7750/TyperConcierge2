@@ -51,3 +51,33 @@ export function constructStyledStringElement(str: string, cursorPosition: number
 
   return element;
 }
+
+export function constructCharacterStyleInformation(str: string, cursorPositions: number[], missedPositions: number[], lastPosition: number): [CharacterStyleInformation[], number] {
+  const missedPositionDict: { [key: number]: boolean } = {};
+  const cursorPositionDict: { [key: number]: boolean } = {};
+
+  missedPositions.forEach(position => {
+    missedPositionDict[position] = true;
+  });
+
+  let minCursorPosition = cursorPositions[0];
+  cursorPositions.forEach(position => {
+    minCursorPosition = position < minCursorPosition ? position : minCursorPosition;
+    cursorPositionDict[position] = true;
+  });
+
+  let charStyleInfos: CharacterStyleInformation[] = [];
+
+  [...str].forEach((c, i) => {
+    const element: CharacterStyleInformation = {
+      c: c,
+      isWrong: i in missedPositionDict,
+      cursorRelative: i in cursorPositionDict ? 'onCursor' : i < minCursorPosition ? 'before' : 'after',
+      isOutRange: lastPosition < i,
+    };
+
+    charStyleInfos.push(element);
+  });
+
+  return [charStyleInfos, minCursorPosition];
+}

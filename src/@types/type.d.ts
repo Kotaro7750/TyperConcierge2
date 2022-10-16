@@ -54,6 +54,13 @@ type DisplayInfo = {
   readonly keyStroke: KeyStrokeDisplayInfo,
 }
 
+type CharacterStyleInformation = {
+  c: string,
+  isWrong: boolean,
+  cursorRelative: 'before' | 'onCursor' | 'after',
+  isOutRange: boolean,
+}
+
 type TypingResultStatistics = {
   keyStroke: TypingResultStatisticsTarget,
   idealKeyStroke: TypingResultStatisticsTarget,

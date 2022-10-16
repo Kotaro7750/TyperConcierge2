@@ -1,58 +1,38 @@
 import _ from 'react';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
-import { isMonoWidthFont } from './utility';
+import { constructCharacterStyleInformation, isMonoWidthFont } from './utility';
 
-interface CharacterStyleInformation {
-  c: string,
+type CharacterStyleInformationForViewPane = CharacterStyleInformation & {
   x: number,
-  isWrong: boolean,
-  cursorRelative: 'before' | 'onCursor' | 'after',
-  isOutRange: boolean,
   explicitSpace: boolean
 }
 
-function ConstructLinesFromViewPane(viewDisplayInfo: ViewDisplayInfo, canvasWidth: number, doubleCharacterWidth: number)
-  : [CharacterStyleInformation[][], number] {
-
-  const missedPositionDict: { [key: number]: boolean } = {};
-  const cursorPositionDict: { [key: number]: boolean } = {};
-
-  viewDisplayInfo.missedPositions.forEach(position => {
-    missedPositionDict[position] = true;
-  });
-
-  let minCursorPosition = viewDisplayInfo.currentCursorPositions[0];
-  viewDisplayInfo.currentCursorPositions.forEach(position => {
-    minCursorPosition = position < minCursorPosition ? position : minCursorPosition;
-    cursorPositionDict[position] = true;
-  });
+function ConstructLinesFromViewPane(charStyleInfos: CharacterStyleInformation[], minCursorPosition: number, canvasWidth: number, doubleCharacterWidth: number)
+  : [CharacterStyleInformationForViewPane[][], number] {
 
   const monoCharacterWidth = Math.floor(doubleCharacterWidth / 2);
 
-  const lines: CharacterStyleInformation[][] = [];
-  let line: CharacterStyleInformation[] = [];
+  const lines: CharacterStyleInformationForViewPane[][] = [];
+  let line: CharacterStyleInformationForViewPane[] = [];
 
   let x = 0;
   let cursorLineIndex = 0;
-  [...viewDisplayInfo.view].forEach((c, i) => {
-    const element: CharacterStyleInformation = {
-      c: c,
+  charStyleInfos.forEach((charStyleInfo, i) => {
+    const element: CharacterStyleInformationForViewPane = {
+      ...charStyleInfo,
       x: x,
-      isWrong: i in missedPositionDict,
-      cursorRelative: i in cursorPositionDict ? 'onCursor' : i < minCursorPosition ? 'before' : 'after',
-      isOutRange: viewDisplayInfo.lastPosition < i,
-      explicitSpace: c == ' ' && (i in cursorPositionDict || i in missedPositionDict || x == 0),
+      explicitSpace: charStyleInfo.c == ' ' && (charStyleInfo.cursorRelative === 'onCursor' || charStyleInfo.isWrong || x == 0),
     };
 
     if (i == minCursorPosition) {
       cursorLineIndex = lines.length;
     }
 
-    x += isMonoWidthFont(c) ? monoCharacterWidth : doubleCharacterWidth;
+    x += isMonoWidthFont(charStyleInfo.c) ? monoCharacterWidth : doubleCharacterWidth;
 
     let isLineEnd = (x + doubleCharacterWidth) > canvasWidth;
     // 行末のスペースは分かるようにする
-    if (isLineEnd && c == ' ') {
+    if (isLineEnd && charStyleInfo.c == ' ') {
       element.explicitSpace = true;
     }
 
@@ -108,7 +88,8 @@ export function ViewPane(props: { viewDisplayInfo: ViewDisplayInfo }): JSX.Eleme
     const yDelta = Math.ceil(characterHeight * 1.5);
     const lineWindowHeight = height - 20;
 
-    const [lines, cursorLineIndex] = ConstructLinesFromViewPane(viewDisplayInfo, width, doubleCharacterWidth);
+    const [charStyleInfos, minCursorPosition] = constructCharacterStyleInformation(viewDisplayInfo.view, viewDisplayInfo.currentCursorPositions, viewDisplayInfo.missedPositions, viewDisplayInfo.lastPosition);
+    const [lines, cursorLineIndex] = ConstructLinesFromViewPane(charStyleInfos, minCursorPosition, width, doubleCharacterWidth);
 
     const lineWindowCapacity = Math.floor(lineWindowHeight / yDelta);
 
