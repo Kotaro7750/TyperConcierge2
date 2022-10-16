@@ -80,7 +80,7 @@ export function TypingView() {
         <ViewPane viewDisplayInfo={viewDisplayInfo} />
       </div>
 
-      <div className='px-4 pb-4' style={{ flexBasis: '40%', flexGrow: 1 }}>
+      <div className='px-4 pb-4 overflow-hidden' style={{ flexBasis: '40%', flexGrow: 1 }}>
         <KeyStrokePane keyStrokeDisplayInfo={keyStrokeDisplayInfo} />
       </div>
     </div>

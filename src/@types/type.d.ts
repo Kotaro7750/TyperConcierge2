@@ -61,6 +61,12 @@ type CharacterStyleInformation = {
   isOutRange: boolean,
 }
 
+type CharacterStyleInformationForCanvas = CharacterStyleInformation & {
+  x: number,
+  explicitSpace: boolean
+}
+
+
 type TypingResultStatistics = {
   keyStroke: TypingResultStatisticsTarget,
   idealKeyStroke: TypingResultStatisticsTarget,
