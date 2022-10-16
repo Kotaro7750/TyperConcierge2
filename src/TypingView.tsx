@@ -1,6 +1,6 @@
 import _, { useEffect, useContext, useRef } from 'react';
 import { TimerPane } from './TimerPane';
-import { OldViewPane } from './OldViewPane';
+import { ViewPane } from './ViewPane';
 import { KeyStrokePane } from './KeyStrokePane';
 
 import { GameStateContext } from './App';
@@ -77,7 +77,7 @@ export function TypingView() {
       </div>
 
       <div className='px-4 pb-4 overflow-hidden' style={{ flexBasis: '40%', flexGrow: 1 }}>
-        <OldViewPane viewDisplayInfo={viewDisplayInfo} />
+        <ViewPane viewDisplayInfo={viewDisplayInfo} />
       </div>
 
       <div className='px-4 pb-4' style={{ flexBasis: '40%', flexGrow: 1 }}>
