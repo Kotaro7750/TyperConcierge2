@@ -43,7 +43,7 @@ export function ResultView(): JSX.Element {
 
   return (
     <div className='w-100 h-100'>
-      <div className='p-0 m-2 vh-50 w-40 border border-secondary border-3 rounded-3 bg-white'>
+      <div className='p-2 h-50 w-40'>
         <ResultSummaryPane summary={resultStatistics} />
       </div>
     </div>

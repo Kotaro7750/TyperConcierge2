@@ -32,7 +32,7 @@ export function ResultSummaryPane(props: { summary: TypingResultStatistics }): J
 
 
   return (
-    <div className='d-flex flex-column w-100 h-100'>
+    <div className='d-flex flex-column w-100 h-100 border border-secondary border-3 rounded-3 bg-white'>
 
       <div className='ms-2'>
         <div className='form-check form-switch'>
