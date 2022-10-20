@@ -3081,7 +3081,9 @@ checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
 
 [[package]]
 name = "typing_engine"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e99ba1f360bbb436c55b98df3f1be1b9f09cf4347e5846ea6b5e190ee586a35"
 dependencies = [
  "once_cell",
  "rand 0.8.5",
