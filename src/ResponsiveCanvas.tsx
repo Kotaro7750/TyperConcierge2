@@ -18,7 +18,7 @@ export function ResponsiveCanvas(props: { sensitivity: any[], draw: (ctx: Canvas
     }
 
     props.draw(ctx, canvasRef.current.width, canvasRef.current.height);
-  }, [visualViewport.width, visualViewport.height]);
+  }, [visualViewport?.width, visualViewport?.height]);
 
   useEffect(() => {
     if (canvasRef.current === null) {
