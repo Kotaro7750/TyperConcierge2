@@ -136,7 +136,6 @@ fn main() {
                 .path_resolver()
                 .resolve_resource("../builtin_dictionary/hoge.txt")
                 .unwrap();
-            println!("hoge{:?}", builtin_dictionary_dir);
 
             app.manage(Mutex::new(Library::new(app.path_resolver())));
 
