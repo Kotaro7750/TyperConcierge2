@@ -9,8 +9,10 @@ export function ResponsiveCanvas(props: { sensitivity: any[], draw: (ctx: Canvas
       return;
     }
 
-    canvasRef.current.width = containerRef.current.clientWidth;
-    canvasRef.current.height = containerRef.current.clientHeight;
+    const scale = window.devicePixelRatio;
+
+    canvasRef.current.width = Math.floor(containerRef.current.clientWidth * scale);
+    canvasRef.current.height = Math.floor(containerRef.current.clientHeight * scale);
 
     let ctx = canvasRef.current.getContext('2d');
     if (ctx === null) {
