@@ -71,7 +71,7 @@ fn confirm_query(
         &vocabulary_entries,
         VocabularyQuantifier::KeyStroke(query_request_from_ui.key_stroke_count_threshold.unwrap()),
         VocabularySeparator::WhiteSpace,
-        VocabularyOrder::InOrder,
+        VocabularyOrder::Random,
     );
 
     typing_engine.lock().unwrap().init(query_request);
